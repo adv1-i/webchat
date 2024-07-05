@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room Management</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1 { text-align: center; }
+    .room-item { background-color: #f4f4f4; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+    .button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Room Management</h1>
+  <a href="/api/rooms/create" class="button">Create New Room</a>
+  <div id="roomList">
+    <div th:each="room : ${rooms}" class="room-item">
+      <h3 th:text="${room.name}"></h3>
+      <p th:text="${room.description}"></p>
+      <p>Private: <span th:text="${room.private ? 'Yes' : 'No'}"></span></p>
+      <a th:href="@{/api/rooms/edit/{id}(id=${room.id})}" class="button">Edit</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .container { display: flex; height: 100vh; }
+    .sidebar { width: 200px; background-color: #f4f4f4; border-right: 1px solid #ccc; padding: 10px; }
+    .chat-container { flex: 1; display: flex; }
+    .chat-area { flex: 1; display: flex; flex-direction: column; }
+    .messages { flex: 1; padding: 10px; border-bottom: 1px solid #ccc; overflow-y: auto; }
+    .message-input { display: flex; padding: 10px; }
+    .message-input input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .message-input button { margin-left: 10px; padding: 10px 20px; border: none; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer; }
+    .message {
+      max-width: 70%;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .message.sent {
+      background-color: #007bff;
+      color: white;
+      margin-left: auto;
+    }
+
+    .message.received {
+      background-color: #f1f1f1;
+      margin-right: auto;
+    }
+
+    .user-list { width: 200px; background-color: #f4f4f4; border-left: 1px solid #ccc; padding: 10px; }
+    .user-list h3 { margin-top: 0; }
+    .user-list ul { list-style-type: none; padding: 0; }
+    .user-list li { margin-bottom: 5px; }
+
+    .user-status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .online {
+      background-color: green;
+    }
+    .offline {
+      background-color: red;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="sidebar">
+    <h2>Available Chats</h2>
+    <ul id="chatList"></ul>
+  </div>
+  <div class="chat-container">
+    <div class="chat-area">
+      <div class="messages" id="messages"></div>
+      <div class="message-input">
+        <input type="text" id="messageInput" placeholder="Enter your message here..."/>
+        <button type="button" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+    <div class="user-list">
+      <h3>Users in Chat</h3>
+      <ul id="userList"></ul>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script>
+  var stompClient = null;
+  var currentRoomId = null;
+  var currentUsername = '';
+  var currentRecipient = '';
+
+  function getCurrentUser() {
+    fetch('/api/users/current')
+            .then(response => {
+              if (response.status === 401) {
+                window.location.href = '/login';
+              }
+              return response.json();
+            })
+            .then(data => {
+              currentUsername = data.username;
+            })
+            .catch(error => console.error('Error fetching current user:', error));
+  }
+
+
+  function connect() {
+    var socket = new SockJS('/ws');
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, function (frame) {
+      console.log('Connected: ' + frame);
+      loadRooms();
+      getCurrentUser();
+      subscribeToUserStatus();
+      sendUserConnect();
+    });
+  }
+
+  function loadRooms() {
+    fetch('/api/rooms')
+            .then(response => {
+              if (response.status === 401) {
+                window.location.href = '/login';
+              }
+              return response.json();
+            })
+            .then(data => {
+              const chatList = document.getElementById('chatList');
+              chatList.innerHTML = '';
+              data.forEach(room => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="#" onclick="joinRoom('${room.id}')">${room.name}</a>`;
+                chatList.appendChild(li);
+              });
+            });
+  }
+
+
+  function loadMessages(roomId) {
+    fetch(`/api/messages/room/${roomId}`)
+            .then(response => response.json())
+            .then(messages => {
+              const messagesDiv = document.getElementById('messages');
+              messagesDiv.innerHTML = '';
+              messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                if (message.sender === currentUsername) {
+                  messageDiv.classList.add('sent');
+                } else {
+                  messageDiv.classList.add('received');
+                }
+                messageDiv.textContent = `${message.sender}: ${message.content}`;
+                messagesDiv.appendChild(messageDiv);
+              });
+            });
+  }
+
+
+  function joinRoom(roomId) {
+    if (currentRoomId) {
+      stompClient.unsubscribe(currentRoomId);
+    }
+    currentRoomId = roomId;
+    stompClient.subscribe(`/topic/${roomId}`, function (messageOutput) {
+      showMessageOutput(JSON.parse(messageOutput.body));
+    });
+    document.getElementById('messages').innerHTML = '';
+    fetch(`/api/rooms/${roomId}`)
+            .then(response => response.json())
+            .then(room => {
+              currentRecipient = room.userIds.find(userId => userId !== currentUsername);
+              loadMessages(roomId);
+              loadRoomUsers(roomId);
+              updateUrl(roomId);
+            });
+  }
+
+  function updateUrl(roomId) {
+    history.pushState(null, '', `/chatroom?sel=${roomId}`);
+  }
+
+  function loadRoomUsers(roomId) {
+    fetch(`/api/rooms/${roomId}/users`)
+            .then(response => response.json())
+            .then(users => {
+              updateUserList(users);
+            });
+  }
+
+  function subscribeToUserStatus() {
+    stompClient.subscribe('/topic/user.status', function (statusOutput) {
+      updateUserStatus(JSON.parse(statusOutput.body));
+    });
+  }
+
+  function sendUserConnect() {
+    stompClient.send("/app/user.connect", {}, JSON.stringify({}));
+  }
+
+  function sendUserDisconnect() {
+    stompClient.send("/app/user.disconnect", {}, JSON.stringify({}));
+  }
+
+  function updateUserStatus(statusUpdate) {
+    const userElement = document.querySelector(`#userList li[data-username="${statusUpdate.username}"]`);
+    if (userElement) {
+      const statusElement = userElement.querySelector('.user-status');
+      statusElement.className = `user-status ${statusUpdate.status.toLowerCase()}`;
+    }
+  }
+
+  function updateUserList(users) {
+    const userList = document.getElementById('userList');
+    userList.innerHTML = '';
+    users.forEach(user => {
+      const li = document.createElement('li');
+      li.setAttribute('data-username', user.username);
+      const statusSpan = document.createElement('span');
+      statusSpan.className = `user-status ${user.status.toLowerCase()}`;
+      li.appendChild(statusSpan);
+      li.appendChild(document.createTextNode(user.username));
+      userList.appendChild(li);
+    });
+  }
+
+
+  function sendMessage() {
+    var messageContent = document.getElementById('messageInput').value.trim();
+    if (messageContent && stompClient && currentRoomId && currentRecipient) {
+      var chatMessage = {
+        sender: currentUsername,
+        content: messageContent,
+        roomId: currentRoomId,
+        recipient: currentRecipient
+      };
+      stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+      document.getElementById('messageInput').value = '';
+    }
+  }
+
+  function showMessageOutput(messageOutput) {
+    var messageDiv = document.createElement('div');
+    messageDiv.className = 'message';
+    if (messageOutput.sender === currentUsername) {
+      messageDiv.classList.add('sent');
+    } else {
+      messageDiv.classList.add('received');
+    }
+    messageDiv.textContent = `${messageOutput.sender}: ${messageOutput.content}`;
+    document.getElementById('messages').appendChild(messageDiv);
+  }
+
+
+  window.onload = function () {
+    connect();
+  };
+
+  window.onbeforeunload = function() {
+    sendUserDisconnect();
+  };
+</script>
+</body>
+</html>

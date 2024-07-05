@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 200px;
+      background-color: #f4f4f4;
+      border-right: 1px solid #ccc;
+      padding: 10px;
+    }
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .messages {
+      flex: 1;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      overflow-y: auto;
+    }
+    .message-input {
+      display: flex;
+      padding: 10px;
+    }
+    .message-input input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .message-input button {
+      margin-left: 10px;
+      padding: 10px 20px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="sidebar">
+    <h2>Available Chats</h2>
+    <!-- В файле chat.html -->
+    <ul id="chatList">
+      <li><a href="#">Chat with User1</a></li>
+      <li><a href="#">Chat with User2</a></li>
+      <li><a href="#">Group Chat</a></li>
+    </ul>
+
+  </div>
+  <div class="chat-area">
+    <div class="messages">
+    </div>
+    <div class="message-input">
+      <input type="text" placeholder="Enter your message here..."/>
+      <button type="button">Send</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
