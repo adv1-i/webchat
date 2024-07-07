@@ -1,9 +1,13 @@
 package com.example.webchat.model;
 
+import com.example.webchat.enums.MessageStatus;
 import com.example.webchat.enums.MessageType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.Date;
+import java.util.List;
 
 @Document(collection = "messages")
 public class Message {
@@ -13,8 +17,10 @@ public class Message {
     private String sender;
     private String roomId;
     private Date timestamp;
-    private String recipient;
+    private List<String> recipients;
     private MessageType messageType;
+    private MessageStatus messageStatus = MessageStatus.SENT;
+
 
     public String getId() {
         return id;
@@ -56,12 +62,20 @@ public class Message {
         this.timestamp = timestamp;
     }
 
-    public String getRecipient() {
-        return recipient;
+    public List<String> getRecipients() {
+        return recipients;
     }
 
-    public void setRecipient(String recipient) {
-        this.recipient = recipient;
+    public void setRecipients(List<String> recipients) {
+        this.recipients = recipients;
+    }
+
+    public MessageStatus getMessageStatus() {
+        return messageStatus;
+    }
+
+    public void setMessageStatus(MessageStatus messageStatus) {
+        this.messageStatus = messageStatus;
     }
 }
 

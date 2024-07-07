@@ -5,3 +5,4 @@ public enum MessageStatus {
     DELIVERED,
     READ
 }
+

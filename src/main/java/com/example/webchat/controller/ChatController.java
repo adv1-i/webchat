@@ -25,7 +25,7 @@ public class ChatController {
         Message message = new Message();
         message.setContent(chatMessage.getContent());
         message.setSender(principal.getName());
-        message.setRecipient(chatMessage.getRecipient());
+        message.setRecipients(chatMessage.getRecipients());
         message.setRoomId(chatMessage.getRoomId());
         message.setTimestamp(new Date());
 

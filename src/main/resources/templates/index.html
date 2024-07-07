@@ -62,7 +62,7 @@
     <div class="chat-area">
       <div class="messages" id="messages"></div>
       <div class="message-input">
-        <input type="text" id="messageInput" placeholder="Enter your message here..."/>
+        <input type="text" id="messageInput" placeholder="Enter your message here..." onkeydown="handleKeyPress(event)"/>
         <button type="button" onclick="sendMessage()">Send</button>
       </div>
     </div>
@@ -79,7 +79,8 @@
   var stompClient = null;
   var currentRoomId = null;
   var currentUsername = '';
-  var currentRecipient = '';
+  var currentRecipients = [];
+
 
   function getCurrentUser() {
     fetch('/api/users/current')
@@ -104,9 +105,16 @@
       loadRooms();
       getCurrentUser();
       subscribeToUserStatus();
-      sendUserConnect();
+      sendUserStatus('ONLINE');
     });
   }
+
+  function sendUserStatus(status) {
+    if (stompClient && currentUsername) {
+      stompClient.send("/app/user.status", {}, JSON.stringify({username: currentUsername, status: status}));
+    }
+  }
+
 
   function loadRooms() {
     fetch('/api/rooms')
@@ -161,12 +169,14 @@
     fetch(`/api/rooms/${roomId}`)
             .then(response => response.json())
             .then(room => {
-              currentRecipient = room.userIds.find(userId => userId !== currentUsername);
+              // Exclude the current user from the recipients list
+              currentRecipients = room.userIds.filter(userId => userId !== currentUsername);
               loadMessages(roomId);
               loadRoomUsers(roomId);
               updateUrl(roomId);
             });
   }
+
 
   function updateUrl(roomId) {
     history.pushState(null, '', `/chatroom?sel=${roomId}`);
@@ -186,14 +196,6 @@
     });
   }
 
-  function sendUserConnect() {
-    stompClient.send("/app/user.connect", {}, JSON.stringify({}));
-  }
-
-  function sendUserDisconnect() {
-    stompClient.send("/app/user.disconnect", {}, JSON.stringify({}));
-  }
-
   function updateUserStatus(statusUpdate) {
     const userElement = document.querySelector(`#userList li[data-username="${statusUpdate.username}"]`);
     if (userElement) {
@@ -201,6 +203,7 @@
       statusElement.className = `user-status ${statusUpdate.status.toLowerCase()}`;
     }
   }
+
 
   function updateUserList(users) {
     const userList = document.getElementById('userList');
@@ -219,17 +222,18 @@
 
   function sendMessage() {
     var messageContent = document.getElementById('messageInput').value.trim();
-    if (messageContent && stompClient && currentRoomId && currentRecipient) {
+    if (messageContent && stompClient && currentRoomId) {
       var chatMessage = {
         sender: currentUsername,
         content: messageContent,
         roomId: currentRoomId,
-        recipient: currentRecipient
+        recipients: currentRecipients
       };
       stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
       document.getElementById('messageInput').value = '';
     }
   }
+
 
   function showMessageOutput(messageOutput) {
     var messageDiv = document.createElement('div');
@@ -243,14 +247,52 @@
     document.getElementById('messages').appendChild(messageDiv);
   }
 
+  function handleKeyPress(event) {
+    if (event.key === "Enter") {
+      sendMessage();
+    }
+  }
+
 
   window.onload = function () {
     connect();
   };
 
   window.onbeforeunload = function() {
-    sendUserDisconnect();
+    sendUserStatus('OFFLINE');
   };
+</script>
+
+<script>
+  var inactivityTime = function () {
+    var time;
+    window.onload = resetTimer;
+    document.onmousemove = resetTimer;
+    document.onkeypress = resetTimer;
+    document.onscroll = resetTimer;
+    document.onmousedown = resetTimer;
+    document.ontouchstart = resetTimer;
+
+    function logout() {
+      sendUserStatus('OFFLINE');
+    }
+
+    function resetTimer() {
+      clearTimeout(time);
+      sendUserStatus('ONLINE');
+      time = setTimeout(logout, 10000);
+    }
+  };
+
+  window.onload = function () {
+    connect();
+    inactivityTime();
+  };
+
+  window.onbeforeunload = function() {
+    sendUserStatus('OFFLINE');
+  };
+
 </script>
 </body>
 </html>
