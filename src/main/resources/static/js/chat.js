@@ -28,7 +28,6 @@ function connect() {
         getCurrentUser();
         subscribeToUserStatus();
         sendUserStatus('ONLINE');
-        updateRoomDetails(roomId);
     });
 }
 

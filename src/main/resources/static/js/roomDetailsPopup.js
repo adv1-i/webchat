@@ -9,11 +9,15 @@ const tabAllMembers = document.querySelector('.popup_tab_all_members');
 const tabModerators = document.querySelector('.popup_tab_moderators');
 const addMemberContainer = document.querySelector('.add_member_to_room_container');
 
+let allUsers = [];
+let moderators = [];
+
 function openPopup() {
     popupOverlay.style.display = 'flex';
     setTimeout(() => {
         popup.classList.add('active');
     }, 10);
+    loadRoomDetails();
 }
 
 function closePopupFunction() {
@@ -21,6 +25,45 @@ function closePopupFunction() {
     setTimeout(() => {
         popupOverlay.style.display = 'none';
     }, 300);
+}
+
+function loadRoomDetails() {
+    const roomId = currentRoomId; // Предполагается, что currentRoomId доступен глобально
+    fetch(`/api/rooms/${roomId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            allUsers = data.users;
+            moderators = allUsers.filter(user => data.moderatorIds.includes(user.id.toString()));
+            displayUsers(allUsers); // По умолчанию показываем всех пользователей
+        })
+        .catch(error => console.error('Error loading room details:', error));
+}
+
+function displayUsers(users) {
+    memberList.innerHTML = '';
+    users.forEach(user => {
+        const li = document.createElement('li');
+        li.className = 'popup_member_item';
+        li.innerHTML = `
+            <span class="popup_member_name">${user.username}</span>
+            <span class="popup_member_role">${moderators.some(mod => mod.id === user.id) ? 'Администратор' : 'Участник'}</span>
+        `;
+        memberList.appendChild(li);
+    });
+}
+
+function switchTab(tab) {
+    tabAllMembers.classList.remove('active');
+    tabModerators.classList.remove('active');
+    tab.classList.add('active');
+
+    if (tab === tabAllMembers) {
+        addMemberContainer.classList.remove('hidden');
+        displayUsers(allUsers);
+    } else {
+        addMemberContainer.classList.add('hidden');
+        displayUsers(moderators);
+    }
 }
 
 chatUserName.addEventListener('click', openPopup);
@@ -31,28 +74,6 @@ popupOverlay.addEventListener('click', (e) => {
         closePopupFunction();
     }
 });
-
-
-
-function switchTab(tab) {
-    tabAllMembers.classList.remove('active');
-    tabModerators.classList.remove('active');
-    tab.classList.add('active');
-
-    if (tab === tabAllMembers) {
-        addMemberContainer.classList.remove('hidden');
-        memberList.querySelectorAll('.popup_member_item').forEach(item => item.style.display = '');
-    } else {
-        addMemberContainer.classList.add('hidden');
-        memberList.querySelectorAll('.popup_member_item').forEach(item => {
-            if (item.querySelector('.popup_member_role').textContent !== 'Администратор') {
-                item.style.display = 'none';
-            } else {
-                item.style.display = '';
-            }
-        });
-    }
-}
 
 tabAllMembers.addEventListener('click', () => switchTab(tabAllMembers));
 tabModerators.addEventListener('click', () => switchTab(tabModerators));

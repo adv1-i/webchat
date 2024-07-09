@@ -10,9 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class RoomService {
@@ -44,7 +42,15 @@ public class RoomService {
                         room.setName(updatedRoom.getName());
                         room.setDescription(updatedRoom.getDescription());
                         room.setPrivate(updatedRoom.isPrivate());
+
+                        room.setUserIds(updatedRoom.getUserIds());
                         room.setModeratorIds(updatedRoom.getModeratorIds());
+
+                        Set<String> allUsers = new HashSet<>(room.getUserIds());
+                        allUsers.addAll(room.getModeratorIds());
+
+                        room.setUserIds(new ArrayList<>(allUsers));
+
                         return roomRepository.save(room);
                     } else {
                         throw new AccessDeniedException("User does not have permission to update this room");

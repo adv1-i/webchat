@@ -128,15 +128,15 @@ public class RoomController {
                                          @RequestParam(required = false) List<String> userIds,
                                          @RequestParam(required = false) List<String> moderatorIds,
                                          Principal principal) {
-        Room room = new Room();
-        room.setId(roomId);
-        room.setName(name);
-        room.setDescription(description);
-        room.setPrivate(isPrivate != null ? isPrivate : false);
-        room.setUserIds(userIds != null ? userIds : new ArrayList<>());
-        room.setModeratorIds(moderatorIds != null ? moderatorIds : new ArrayList<>());
+        Room roomUpdate = new Room();
+        roomUpdate.setId(roomId);
+        roomUpdate.setName(name);
+        roomUpdate.setDescription(description);
+        roomUpdate.setPrivate(isPrivate != null ? isPrivate : false);
+        roomUpdate.setUserIds(userIds != null ? userIds : new ArrayList<>());
+        roomUpdate.setModeratorIds(moderatorIds != null ? moderatorIds : new ArrayList<>());
 
-        return roomService.updateRoom(roomId, room, principal.getName())
+        return roomService.updateRoom(roomId, roomUpdate, principal.getName())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -180,6 +180,7 @@ public class RoomController {
 
                     details.put("users", users);
                     details.put("userCount", users.size());
+                    details.put("moderatorIds", room.getModeratorIds());
 
                     return ResponseEntity.ok(details);
                 })

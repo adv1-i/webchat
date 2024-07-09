@@ -1,4 +1,4 @@
-package com.example.webchat.config;
+package com.example.webchat.controller;
 
 import com.example.webchat.UserStatusMessage;
 import com.example.webchat.dto.UserStatusDTO;

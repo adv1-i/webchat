@@ -16,6 +16,60 @@
     .button-group { display: flex; justify-content: space-between; }
     optgroup { font-weight: bold; }
   </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.querySelector('form');
+      const userSelect = document.getElementById('userSelect');
+      const moderatorSelect = document.getElementById('moderatorSelect');
+
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const roomName = document.getElementById('roomName').value.trim();
+        if (roomName === '') {
+          alert('Room name is required!');
+          return;
+        }
+
+        this.submit();
+      });
+
+      function updateSelectedCount(selectId, countId) {
+        const select = document.getElementById(selectId);
+        const countElement = document.getElementById(countId);
+        countElement.textContent = select.selectedOptions.length;
+      }
+
+      function removeFromOtherSelect(selectElement, optionValue) {
+        const otherSelect = selectElement === userSelect ? moderatorSelect : userSelect;
+        const option = otherSelect.querySelector(`option[value="${optionValue}"]`);
+        if (option) {
+          option.selected = false;
+        }
+        updateSelectedCount(otherSelect.id, otherSelect.id === 'userSelect' ? 'userCount' : 'moderatorCount');
+      }
+
+      function handleSelectChange(event) {
+        const select = event.target;
+        const selectedOptions = Array.from(select.selectedOptions);
+        const deselectedOptions = Array.from(select.options).filter(option => !option.selected);
+
+        deselectedOptions.forEach(option => {
+          removeFromOtherSelect(select, option.value);
+        });
+
+        updateSelectedCount(select.id, select.id === 'userSelect' ? 'userCount' : 'moderatorCount');
+      }
+
+      userSelect.addEventListener('change', handleSelectChange);
+      moderatorSelect.addEventListener('change', handleSelectChange);
+
+      // Initialize counters
+      updateSelectedCount('userSelect', 'userCount');
+      updateSelectedCount('moderatorSelect', 'moderatorCount');
+    });
+  </script>
 </head>
 <body>
 <div class="container">
@@ -34,7 +88,7 @@
       Private Room
     </label>
 
-    <label for="userSelect">Select Users:</label>
+    <label for="userSelect">Select Users: <span id="userCount">0</span> selected</label>
     <select id="userSelect" th:field="*{userIds}" multiple>
       <optgroup th:each="role : ${roles}" th:label="${role}">
         <option th:each="user : ${users}"
@@ -44,7 +98,7 @@
       </optgroup>
     </select>
 
-    <label for="moderatorSelect">Select Moderators:</label>
+    <label for="moderatorSelect">Select Moderators: <span id="moderatorCount">0</span> selected</label>
     <select id="moderatorSelect" th:field="*{moderatorIds}" multiple>
       <optgroup th:each="role : ${roles}" th:label="${role}">
         <option th:each="user : ${users}"
