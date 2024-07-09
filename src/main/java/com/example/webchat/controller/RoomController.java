@@ -18,8 +18,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -162,6 +161,27 @@ public class RoomController {
                     } else {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).<Void>build();
                     }
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{roomId}/details")
+    public ResponseEntity<Map<String, Object>> getRoomDetails(@PathVariable String roomId) {
+        return roomRepository.findById(roomId)
+                .map(room -> {
+                    Map<String, Object> details = new HashMap<>();
+                    details.put("name", room.getName());
+                    details.put("description", room.getDescription());
+
+                    List<User> users = room.getUserIds().stream()
+                            .map(userId -> userRepository.findById(Long.valueOf(userId)).orElse(null))
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toList());
+
+                    details.put("users", users);
+                    details.put("userCount", users.size());
+
+                    return ResponseEntity.ok(details);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
