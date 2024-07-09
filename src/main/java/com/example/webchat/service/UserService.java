@@ -51,6 +51,10 @@ public class UserService implements UserDetailsService {
                 .map(user -> new UserStatusDTO(user.getUsername(), user.getStatus()))
                 .collect(Collectors.toList());
     }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
 }
 
 

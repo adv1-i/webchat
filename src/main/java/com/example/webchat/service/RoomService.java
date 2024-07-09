@@ -1,6 +1,7 @@
 package com.example.webchat.service;
 
 import com.example.webchat.enums.RoleName;
+import com.example.webchat.enums.RoomType;
 import com.example.webchat.model.User;
 import com.example.webchat.repository.RoomRepository;
 import com.example.webchat.model.Room;
@@ -28,6 +29,15 @@ public class RoomService {
                 .orElseThrow(() -> new UsernameNotFoundException("Creator not found: " + creatorUsername));
         room.setCreatorId(creator.getId().toString());
         room.setModeratorIds(Collections.singletonList(creator.getId().toString()));
+
+        if (room.getUserIds().size() == 2 && !room.isPrivate()) {
+            room.setRoomType(RoomType.PERSONAL);
+        } else if (room.isPrivate()) {
+            room.setRoomType(RoomType.GROUP);
+        } else {
+            room.setRoomType(RoomType.PUBLIC);
+        }
+
         return roomRepository.save(room);
     }
 
@@ -43,13 +53,23 @@ public class RoomService {
                         room.setDescription(updatedRoom.getDescription());
                         room.setPrivate(updatedRoom.isPrivate());
 
+                        // Update both userIds and moderatorIds
                         room.setUserIds(updatedRoom.getUserIds());
                         room.setModeratorIds(updatedRoom.getModeratorIds());
 
+                        // Ensure that all moderators are also in the userIds list
                         Set<String> allUsers = new HashSet<>(room.getUserIds());
                         allUsers.addAll(room.getModeratorIds());
 
                         room.setUserIds(new ArrayList<>(allUsers));
+
+                        if (room.getUserIds().size() == 2 && !room.isPrivate()) {
+                            room.setRoomType(RoomType.PERSONAL);
+                        } else if (room.isPrivate()) {
+                            room.setRoomType(RoomType.GROUP);
+                        } else {
+                            room.setRoomType(RoomType.PUBLIC);
+                        }
 
                         return roomRepository.save(room);
                     } else {

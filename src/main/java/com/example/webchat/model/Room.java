@@ -1,5 +1,8 @@
 package com.example.webchat.model;
 
+import com.example.webchat.enums.RoomType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.List;
@@ -14,6 +17,8 @@ public class Room {
     private List<String> userIds;
     private String creatorId;
     private List<String> moderatorIds;
+    @Enumerated(EnumType.STRING)
+    private RoomType roomType;
 
     public Room() {}
 
@@ -75,6 +80,14 @@ public class Room {
     }
     public void setModeratorIds(List<String> moderatorIds) {
         this.moderatorIds = moderatorIds;
+    }
+
+    public RoomType getRoomType() {
+        return roomType;
+    }
+
+    public void setRoomType(RoomType roomType) {
+        this.roomType = roomType;
     }
 }
 
