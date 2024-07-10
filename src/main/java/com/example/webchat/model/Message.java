@@ -20,6 +20,8 @@ public class Message {
     private List<String> recipients;
     private MessageType messageType;
     private MessageStatus messageStatus = MessageStatus.SENT;
+    private List<String> fileIds;
+    private List<String> fileNames;
 
 
     public String getId() {
@@ -76,6 +78,22 @@ public class Message {
 
     public void setMessageStatus(MessageStatus messageStatus) {
         this.messageStatus = messageStatus;
+    }
+
+    public List<String> getFileIds() {
+        return fileIds;
+    }
+
+    public void setFileIds(List<String> fileIds) {
+        this.fileIds = fileIds;
+    }
+
+    public List<String> getFileNames() {
+        return fileNames;
+    }
+
+    public void setFileNames(List<String> fileNames) {
+        this.fileNames = fileNames;
     }
 }
 

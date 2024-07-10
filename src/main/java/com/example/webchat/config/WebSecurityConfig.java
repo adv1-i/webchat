@@ -18,9 +18,10 @@ public class WebSecurityConfig {
         http
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/rooms/create", "/api/rooms/edit/**").hasAnyAuthority("ADMIN", "TEACHER")
-                        .requestMatchers("/api/rooms/**").authenticated()
+                        .requestMatchers("/api/rooms/**", "/api/messages/**", "/api/files/**").authenticated()
                         .anyRequest().permitAll()
                 )
+                .csrf().disable()  // Отключаем CSRF для упрощения. В production нужно настроить правильно.
                 .formLogin(form -> form
                         .loginPage("/login")
                         .defaultSuccessUrl("/", true)

@@ -72,15 +72,7 @@ function loadMessages(roomId) {
             const messagesDiv = document.getElementById('messages');
             messagesDiv.innerHTML = '';
             messages.forEach(message => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'message';
-                if (message.sender === currentUsername) {
-                    messageDiv.classList.add('sent');
-                } else {
-                    messageDiv.classList.add('received');
-                }
-                messageDiv.textContent = `${message.sender}: ${message.content}`;
-                messagesDiv.appendChild(messageDiv);
+                showMessageOutput(message);
             });
         });
 }
@@ -205,24 +197,51 @@ function updateUserList(users) {
     });
 }
 
-
 function sendMessage() {
     var messageContent = document.getElementById('messageInput').value.trim();
-    if (messageContent && stompClient && currentRoomId) {
-        var chatMessage = {
-            sender: currentUsername,
-            content: messageContent,
-            roomId: currentRoomId,
-            recipients: currentRecipients
-        };
-        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
-        document.getElementById('messageInput').value = '';
-        adjustTextareaHeight();
+    if ((messageContent || selectedFiles.length > 0) && stompClient && currentRoomId) {
+        const formData = new FormData();
+        formData.append('content', messageContent);
+        formData.append('sender', currentUsername);
+        formData.append('roomId', currentRoomId);
+        formData.append('recipients', JSON.stringify(currentRecipients));
+
+        selectedFiles.forEach(file => {
+            formData.append('files', file);
+        });
+
+        fetch('/api/messages/send-with-files', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(message => {
+                showMessageOutput(message);
+                document.getElementById('messageInput').value = '';
+                selectedFiles = [];
+                updateFileList();
+                adjustTextareaHeight();
+                updateSendButton();
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                alert('Failed to send message. Please try again.');
+            });
     }
 }
 
 
 function showMessageOutput(messageOutput) {
+    if (!messageOutput || !messageOutput.sender) {
+        console.error('Invalid message format:', messageOutput);
+        return;
+    }
+
     var messageDiv = document.createElement('div');
     messageDiv.className = 'message';
     if (messageOutput.sender === currentUsername) {
@@ -230,7 +249,25 @@ function showMessageOutput(messageOutput) {
     } else {
         messageDiv.classList.add('received');
     }
-    messageDiv.textContent = `${messageOutput.sender}: ${messageOutput.content}`;
+
+    let messageContent = `${messageOutput.sender}: `;
+
+    if (messageOutput.content) {
+        messageContent += messageOutput.content;
+    }
+
+    if (messageOutput.fileIds && messageOutput.fileNames && messageOutput.fileIds.length > 0) {
+        if (messageOutput.content) {
+            messageContent += '<br>';
+        }
+        messageContent += 'Attached files: ';
+        messageOutput.fileIds.forEach((fileId, index) => {
+            const fileName = messageOutput.fileNames[index];
+            messageContent += `<a href="/api/files/${fileId}" target="_blank">${fileName}</a> `;
+        });
+    }
+
+    messageDiv.innerHTML = messageContent;
     document.getElementById('messages').appendChild(messageDiv);
 }
 
