@@ -28,13 +28,13 @@ function closePopupFunction() {
 }
 
 function loadRoomDetails() {
-    const roomId = currentRoomId; // Предполагается, что currentRoomId доступен глобально
+    const roomId = currentRoomId;
     fetch(`/api/rooms/${roomId}/details`)
         .then(response => response.json())
         .then(data => {
             allUsers = data.users;
             moderators = allUsers.filter(user => data.moderatorIds.includes(user.id.toString()));
-            displayUsers(allUsers); // По умолчанию показываем всех пользователей
+            displayUsers(allUsers);
         })
         .catch(error => console.error('Error loading room details:', error));
 }
@@ -77,3 +77,17 @@ popupOverlay.addEventListener('click', (e) => {
 
 tabAllMembers.addEventListener('click', () => switchTab(tabAllMembers));
 tabModerators.addEventListener('click', () => switchTab(tabModerators));
+
+
+const addMember = document.querySelector('.add_member_to_room_container');
+addMember.style.cursor = 'pointer';
+
+addMember.addEventListener('click', function() {
+    document.querySelector('.popup-overlay').style.display = 'none';
+    document.getElementById('newPopup').style.display = 'flex';
+});
+
+document.getElementById('backBtn').addEventListener('click', function() {
+    document.getElementById('newPopup').style.display = 'none';
+    document.querySelector('.popup-overlay').style.display = 'flex';
+});

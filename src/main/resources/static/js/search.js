@@ -1,6 +1,6 @@
-const searchButton = document.getElementById("search-button");
+const searchButton = document.getElementById("search-button", "popup_new_search-button");
 const searchInput = document.querySelector('input[type="text"]');
-const searchIcon = searchButton.querySelector("img");
+// let searchIcon = searchButton.getElementById("search_btn");
 
 function toggleSearchIcon() {
     searchIcon.src =

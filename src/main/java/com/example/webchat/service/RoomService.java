@@ -32,6 +32,14 @@ public class RoomService {
 
         if (room.getUserIds().size() == 2 && !room.isPrivate()) {
             room.setRoomType(RoomType.PERSONAL);
+            // Set room name to the recipient's name for PERSONAL rooms
+            String recipientId = room.getUserIds().stream()
+                    .filter(id -> !id.equals(creator.getId().toString()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid user list for PERSONAL room"));
+            User recipient = userRepository.findById(Long.valueOf(recipientId))
+                    .orElseThrow(() -> new UsernameNotFoundException("Recipient not found"));
+            room.setName(recipient.getUsername());
         } else if (room.isPrivate()) {
             room.setRoomType(RoomType.GROUP);
         } else {

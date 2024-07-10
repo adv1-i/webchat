@@ -186,4 +186,18 @@ public class RoomController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/{roomId}/available-users")
+    public ResponseEntity<List<User>> getAvailableUsers(@PathVariable String roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
+
+        List<User> allUsers = userRepository.findAll();
+        List<User> availableUsers = allUsers.stream()
+                .filter(user -> !room.getUserIds().contains(user.getId().toString()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(availableUsers);
+    }
+
 }

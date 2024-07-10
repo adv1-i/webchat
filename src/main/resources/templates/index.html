@@ -101,9 +101,35 @@
       <!-- Динамическое заполнение списка пользователей -->
     </ul>
     <div class="popup_lower_part">
-      <button type="submit" class="add-member-button">
+      <button type="submit" class="leave_room_button">
         Выйти из чата
       </button>
+    </div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="newPopup">
+  <div class="popup_new">
+    <button class="close-popup">
+      <img th:src="@{/svg/close-pic.svg}" alt="close">
+    </button>
+    <div class="popup_new_upper_leftside">
+      <button id="backBtn">
+        <img th:src="@{/svg/backbtn.svg}" alt="back">
+      </button>
+      <h1 class="popup_title_text">Добавить участников</h1>
+    </div>
+    <div class="popup_new_search-container">
+      <input type="text" placeholder="Найти пользователя" />
+      <button type="submit" id="popup_new_search-button">
+        <img th:src="@{/svg/search.svg}" id="popup_new_search_btn" />
+      </button>
+    </div>
+    <ul class="popup_new_member_list" id="availableUsersList">
+      <!-- Динамическое заполнение списка пользователей -->
+    </ul>
+    <div class="popup_new_lower_part">
+      <button type="submit" class="add_member_button" onclick="addUsersToRoom()">Добавить</button>
     </div>
   </div>
 </div>

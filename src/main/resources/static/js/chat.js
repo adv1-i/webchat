@@ -85,6 +85,34 @@ function loadMessages(roomId) {
         });
 }
 
+function getAvailableUsers(roomId) {
+    fetch(`/api/rooms/${roomId}/available-users`)
+        .then(response => response.json())
+        .then(users => {
+            const availableUsersList = document.getElementById('availableUsersList');
+            availableUsersList.innerHTML = '';
+
+            users.forEach(user => {
+                const userItem = document.createElement('li');
+                userItem.className = 'popup_new_member_item';
+
+                userItem.innerHTML = `
+                    <div class="popup_divider_container">
+                        <div class="popup_new_member_img">
+                            <img src="/svg/chat_room_img_little.svg" alt="member_toAdd_pic">
+                        </div>
+                        <div class="popup_member_name">${user.username}</div>
+                        <input type="checkbox" name="userCheckbox" value="${user.id}">
+                    </div>
+                `;
+
+                availableUsersList.appendChild(userItem);
+            });
+        })
+        .catch(error => console.error('Error fetching available users:', error));
+}
+
+
 
 function joinRoom(roomId) {
     if (currentRoomId) {
@@ -103,6 +131,7 @@ function joinRoom(roomId) {
             loadRoomUsers(roomId);
             updateUrl(roomId);
             updateRoomDetails(roomId);
+            getAvailableUsers(roomId);
         });
 }
 
