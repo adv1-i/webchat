@@ -95,6 +95,14 @@ public class Message {
     public void setFileNames(List<String> fileNames) {
         this.fileNames = fileNames;
     }
+
+    public MessageType getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(MessageType messageType) {
+        this.messageType = messageType;
+    }
 }
 
 

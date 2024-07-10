@@ -1,5 +1,6 @@
 package com.example.webchat.service;
 
+import com.example.webchat.enums.MessageType;
 import com.example.webchat.exception.MaxFileSizeExceededException;
 import com.example.webchat.exception.MaxFilesExceededException;
 import com.example.webchat.repository.MessageRepository;
@@ -81,6 +82,7 @@ public class MessageService {
             }
             message.setFileIds(fileIds);
             message.setFileNames(fileNames);
+            message.setMessageType(MessageType.FILE);
         }
 
         return messageRepository.save(message);

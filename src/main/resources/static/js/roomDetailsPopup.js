@@ -47,10 +47,48 @@ function displayUsers(users) {
         li.innerHTML = `
             <span class="popup_member_name">${user.username}</span>
             <span class="popup_member_role">${moderators.some(mod => mod.id === user.id) ? 'Администратор' : 'Участник'}</span>
+            ${user.username !== currentUsername ? `
+                <button class="delete-user-btn">
+                    <img src="/svg/delete_from_room.svg" alt="Delete user" />
+                </button>
+            ` : ''}
         `;
+        if (user.username !== currentUsername) {
+            const deleteBtn = li.querySelector('.delete-user-btn');
+            deleteBtn.addEventListener('click', () => confirmDeleteUser(user));
+        }
         memberList.appendChild(li);
     });
 }
+
+function confirmDeleteUser(user) {
+    if (confirm(`Вы точно хотите удалить ${user.username} из комнаты чата?`)) {
+        deleteUserFromRoom(user.id);
+    }
+}
+
+function deleteUserFromRoom(userId) {
+    const roomId = currentRoomId;
+    fetch(`/api/rooms/${roomId}/users/${userId}`, {
+        method: 'DELETE',
+    })
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to delete user from room');
+            }
+        })
+        .then((data) => {
+            loadRoomDetails();
+            updateRoomDetails(roomId);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+
+}
+
 
 function switchTab(tab) {
     tabAllMembers.classList.remove('active');

@@ -1,5 +1,6 @@
 package com.example.webchat.controller;
 
+import com.example.webchat.enums.MessageType;
 import com.example.webchat.enums.RoomType;
 import com.example.webchat.model.Message;
 import com.example.webchat.model.Room;
@@ -37,6 +38,7 @@ public class ChatController {
         message.setContent(chatMessage.getContent());
         message.setSender(principal.getName());
         message.setRoomId(chatMessage.getRoomId());
+        message.setMessageType(MessageType.TEXT);
         message.setTimestamp(new Date());
 
         List<String> recipients = new ArrayList<>(chatMessage.getRecipients());

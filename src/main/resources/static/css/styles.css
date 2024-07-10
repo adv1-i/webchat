@@ -714,6 +714,14 @@ body {
     justify-content: space-between;
 }
 
+.delete-user-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 10px;
+}
+
 .popup_new_member_img {
     height: 25px;
     padding-left: 7px;

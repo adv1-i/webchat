@@ -77,6 +77,16 @@ function loadMessages(roomId) {
         });
 }
 
+function updateAvailableUsersList(addedUsers) {
+    const availableUsersList = document.getElementById('availableUsersList');
+    addedUsers.forEach(userId => {
+        const userItem = availableUsersList.querySelector(`input[value="${userId}"]`).closest('li');
+        if (userItem) {
+            userItem.remove();
+        }
+    });
+}
+
 function getAvailableUsers(roomId) {
     fetch(`/api/rooms/${roomId}/available-users`)
         .then(response => response.json())
@@ -101,7 +111,7 @@ function getAvailableUsers(roomId) {
                 availableUsersList.appendChild(userItem);
             });
         })
-        .catch(error => console.error('Error fetching available users:', error));
+        .catch(error => console.error('Ошибка при получении доступных пользователей:', error));
 }
 
 
@@ -136,15 +146,10 @@ function updateRoomDetails(roomId) {
             document.querySelector('.room_group_name').textContent = data.name;
             document.querySelector('.room_group_count').textContent = `${data.userCount} участника`;
 
-            const userList = document.getElementById('popupMemberList');
-            userList.innerHTML = '';
-            data.users.forEach(user => {
-                const li = document.createElement('li');
-                li.textContent = user.username;
-                userList.appendChild(li);
-            });
+            displayUsers(data.users);
+            getAvailableUsers(roomId);
         })
-        .catch(error => console.error('Error fetching room details:', error));
+        .catch(error => console.error('Ошибка при получении деталей комнаты:', error));
 }
 
 
@@ -199,40 +204,56 @@ function updateUserList(users) {
 
 function sendMessage() {
     var messageContent = document.getElementById('messageInput').value.trim();
-    if ((messageContent || selectedFiles.length > 0) && stompClient && currentRoomId) {
-        const formData = new FormData();
-        formData.append('content', messageContent);
-        formData.append('sender', currentUsername);
-        formData.append('roomId', currentRoomId);
-        formData.append('recipients', JSON.stringify(currentRecipients));
+    if (stompClient && currentRoomId) {
+        if (selectedFiles.length > 0) {
+            const formData = new FormData();
+            formData.append('content', messageContent);
+            formData.append('sender', currentUsername);
+            formData.append('roomId', currentRoomId);
+            formData.append('recipients', JSON.stringify(currentRecipients));
 
-        selectedFiles.forEach(file => {
-            formData.append('files', file);
-        });
-
-        fetch('/api/messages/send-with-files', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(message => {
-                showMessageOutput(message);
-                document.getElementById('messageInput').value = '';
-                selectedFiles = [];
-                updateFileList();
-                adjustTextareaHeight();
-                updateSendButton();
-            })
-            .catch(error => {
-                console.error('Error sending message:', error);
-                alert('Failed to send message. Please try again.');
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
             });
+
+            fetch('/api/messages/send-with-files', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(message => {
+                    showMessageOutput(message);
+                    clearMessageInput();
+                })
+                .catch(error => {
+                    console.error('Error sending message:', error);
+                    alert('Failed to send message. Please try again.');
+                });
+        } else if (messageContent) {
+            const message = {
+                content: messageContent,
+                sender: currentUsername,
+                roomId: currentRoomId,
+                recipients: currentRecipients
+            };
+
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(message));
+            clearMessageInput();
+        }
     }
+}
+
+function clearMessageInput() {
+    document.getElementById('messageInput').value = '';
+    selectedFiles = [];
+    updateFileList();
+    adjustTextareaHeight();
+    updateSendButton();
 }
 
 
@@ -302,15 +323,6 @@ function showMessageOutput(messageOutput) {
     messageDiv.appendChild(messageContentDiv);
     document.getElementById('messages').appendChild(messageDiv);
 }
-
-
-
-function handleKeyPress(event) {
-    if (event.key === "Enter") {
-        sendMessage();
-    }
-}
-
 
 window.onload = function () {
     connect();

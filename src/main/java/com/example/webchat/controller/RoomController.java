@@ -1,7 +1,6 @@
 package com.example.webchat.controller;
 
 import com.example.webchat.enums.RoleName;
-import com.example.webchat.exception.RoomNotFoundException;
 import com.example.webchat.model.Room;
 import com.example.webchat.model.User;
 import com.example.webchat.repository.RoomRepository;
@@ -10,12 +9,11 @@ import com.example.webchat.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.util.*;
@@ -73,6 +71,30 @@ public class RoomController {
                             .filter(user -> user != null)
                             .collect(Collectors.toList());
                     return ResponseEntity.ok(users);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{roomId}/users")
+    public ResponseEntity<?> addUsersToRoom(@PathVariable String roomId, @RequestBody List<String> userIds, Principal principal) {
+        User currentUser = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + principal.getName()));
+
+        return roomRepository.findById(roomId)
+                .map(room -> {
+                    if (currentUser.getRole() == RoleName.ADMIN ||
+                            room.getCreatorId().equals(currentUser.getId().toString()) ||
+                            room.getModeratorIds().contains(currentUser.getId().toString())) {
+
+                        Set<String> updatedUserIds = new HashSet<>(room.getUserIds());
+                        updatedUserIds.addAll(userIds);
+                        room.setUserIds(new ArrayList<>(updatedUserIds));
+
+                        Room updatedRoom = roomRepository.save(room);
+                        return ResponseEntity.ok(updatedRoom);
+                    } else {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    }
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -200,4 +222,60 @@ public class RoomController {
         return ResponseEntity.ok(availableUsers);
     }
 
+//    @DeleteMapping("/{roomId}/users/{userId}")
+//    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('TEACHER')")
+//    public ResponseEntity<?> removeUserFromRoom(@PathVariable String roomId, @PathVariable String userId, Principal principal) {
+//        User currentUser = userRepository.findByUsername(principal.getName())
+//                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + principal.getName()));
+//
+//        return roomRepository.findById(roomId)
+//                .map(room -> {
+//                    if (currentUser.getRole() == RoleName.ADMIN ||
+//                            room.getCreatorId().equals(currentUser.getId().toString()) ||
+//                            room.getModeratorIds().contains(currentUser.getId().toString())) {
+//
+//                        List<String> updatedUserIds = new ArrayList<>(room.getUserIds());
+//                        updatedUserIds.remove(userId);
+//                        room.setUserIds(updatedUserIds);
+//
+//                        List<String> updatedModeratorIds = new ArrayList<>(room.getModeratorIds());
+//                        updatedModeratorIds.remove(userId);
+//                        room.setModeratorIds(updatedModeratorIds);
+//
+//                        roomRepository.save(room);
+//                        return ResponseEntity.ok().body("User removed successfully");
+//                    } else {
+//                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Forbidden");
+//                    }
+//                })
+//                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Room not found"));
+//    }
+
+    @DeleteMapping("/{roomId}/users/{userId}")
+    public ResponseEntity<?> removeUserFromRoom(@PathVariable String roomId, @PathVariable String userId, Principal principal) {
+        User currentUser = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + principal.getName()));
+
+        return roomRepository.findById(roomId)
+                .map(room -> {
+                    if (currentUser.getRole() == RoleName.ADMIN ||
+                            room.getCreatorId().equals(currentUser.getId().toString()) ||
+                            room.getModeratorIds().contains(currentUser.getId().toString())) {
+
+                        List<String> updatedUserIds = new ArrayList<>(room.getUserIds());
+                        updatedUserIds.remove(userId);
+                        room.setUserIds(updatedUserIds);
+
+                        List<String> updatedModeratorIds = new ArrayList<>(room.getModeratorIds());
+                        updatedModeratorIds.remove(userId);
+                        room.setModeratorIds(updatedModeratorIds);
+
+                        roomRepository.save(room);
+                        return ResponseEntity.ok().body(Map.of("message", "User removed successfully"));
+                    } else {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Forbidden");
+                    }
+                })
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Room not found"));
+                    }
 }
