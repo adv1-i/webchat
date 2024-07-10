@@ -250,26 +250,60 @@ function showMessageOutput(messageOutput) {
         messageDiv.classList.add('received');
     }
 
-    let messageContent = `${messageOutput.sender}: `;
+    var messageContentDiv = document.createElement('div');
+    messageContentDiv.className = 'message-content';
+
+    let messageText = `${messageOutput.sender}: `;
+
+    var textDiv = document.createElement('div');
+    textDiv.className = 'message-text';
+    textDiv.innerHTML = messageText;
+    messageContentDiv.appendChild(textDiv);
 
     if (messageOutput.content) {
-        messageContent += messageOutput.content;
+        messageText += messageOutput.content;
+        textDiv.innerHTML = messageText;
     }
 
     if (messageOutput.fileIds && messageOutput.fileNames && messageOutput.fileIds.length > 0) {
-        if (messageOutput.content) {
-            messageContent += '<br>';
-        }
-        messageContent += 'Attached files: ';
+        var imagesDiv = document.createElement('div');
+        imagesDiv.className = 'message-images';
+
         messageOutput.fileIds.forEach((fileId, index) => {
-            const fileName = messageOutput.fileNames[index];
-            messageContent += `<a href="/api/files/${fileId}" target="_blank">${fileName}</a> `;
+            const fileName = messageOutput.fileNames[index].toLowerCase();
+            if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.gif')) {
+                var img = document.createElement('img');
+                img.src = `/api/files/${fileId}`;
+                img.alt = fileName;
+                imagesDiv.appendChild(img);
+            }
+        });
+
+        if (imagesDiv.children.length > 0) {
+            messageContentDiv.appendChild(imagesDiv);
+        }
+
+        messageOutput.fileIds.forEach((fileId, index) => {
+            const fileName = messageOutput.fileNames[index].toLowerCase();
+            if (!fileName.endsWith('.jpg') && !fileName.endsWith('.jpeg') && !fileName.endsWith('.png') && !fileName.endsWith('.gif')) {
+                var fileDiv = document.createElement('a');
+                fileDiv.className = 'message-file';
+                fileDiv.href = `/api/files/${fileId}`;
+                fileDiv.download = fileName;
+                fileDiv.innerHTML = `
+                    <img src="/svg/doc.svg" alt="File">
+                    <span>${fileName}</span>
+                `;
+                messageContentDiv.appendChild(fileDiv);
+            }
         });
     }
 
-    messageDiv.innerHTML = messageContent;
+    messageDiv.appendChild(messageContentDiv);
     document.getElementById('messages').appendChild(messageDiv);
 }
+
+
 
 function handleKeyPress(event) {
     if (event.key === "Enter") {

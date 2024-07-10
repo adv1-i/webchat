@@ -32,20 +32,56 @@ function handleFileSelection(event) {
 }
 
 function updateFileList() {
-    const fileListContainer = document.getElementById('fileList');
-    fileListContainer.innerHTML = '';
+    const fileListContainer = document.getElementById('fileListContainer');
+    const fileList = document.getElementById('fileList');
+    const messageInputContainer = document.querySelector(".message-input")
+    fileList.innerHTML = '';
+
+    if (selectedFiles.length === 0) {
+        fileListContainer.style.display = 'none';
+        messageInputContainer.style.borderBottomLeftRadius = '10px';
+        messageInputContainer.style.borderBottomRightRadius = '10px';
+        return;
+    }
+
+    fileListContainer.style.display = 'block';
+
+    messageInputContainer.style.borderBottomLeftRadius = '0';
+    messageInputContainer.style.borderBottomRightRadius = '0';
+
     selectedFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
-        fileItem.textContent = file.name;
+        fileItem.className = 'file-item';
+
+        if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.className = 'file-preview';
+            img.src = URL.createObjectURL(file);
+            fileItem.appendChild(img);
+        } else {
+            const icon = document.createElement('img');
+            icon.className = 'file-icon';
+            icon.src = '/svg/doc.svg'; // Make sure this path is correct
+            fileItem.appendChild(icon);
+        }
+
+        const fileName = document.createElement('span');
+        fileName.className = 'file-name';
+        fileName.textContent = file.name;
+        fileItem.appendChild(fileName);
+
         const removeButton = document.createElement('button');
+        removeButton.className = 'remove-file';
         removeButton.textContent = 'X';
         removeButton.onclick = () => removeFile(index);
         fileItem.appendChild(removeButton);
-        fileListContainer.appendChild(fileItem);
+
+        fileList.appendChild(fileItem);
     });
 }
 
 function removeFile(index) {
+    URL.revokeObjectURL(selectedFiles[index]); // Revoke the object URL to free up memory
     selectedFiles.splice(index, 1);
     updateFileList();
     updateSendButton();

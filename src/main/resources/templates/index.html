@@ -40,7 +40,6 @@
         <button type="button" id="addFileToMessage">
           <img th:src="@{/svg/addToMessage.svg}" alt="add" />
         </button>
-        <div id="fileList"></div>
         <textarea id="messageInput" placeholder="Напишите сообщение" rows="1"></textarea>
         <div class="input_button_container">
           <button type="button">
@@ -50,6 +49,9 @@
             <img th:src="@{/svg/mic.svg}" alt="mic" />
           </button>
         </div>
+      </div>
+      <div id="fileListContainer" class="file-list-container" style="display: none">
+        <div id="fileList" class="file-list"></div>
       </div>
     </div>
   </div>
