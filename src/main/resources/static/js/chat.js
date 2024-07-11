@@ -263,28 +263,31 @@ function showMessageOutput(messageOutput) {
         return;
     }
 
-    var messageDiv = document.createElement('div');
-    messageDiv.className = 'message';
-    if (messageOutput.sender === currentUsername) {
-        messageDiv.classList.add('sent');
+    let messageDiv = document.querySelector(`[data-message-id="${messageOutput.id}"]`);
+
+    if (messageDiv) {
+        updateMessageInDOM(messageOutput);
     } else {
-        messageDiv.classList.add('received');
-    }
+        messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+        messageDiv.setAttribute('data-message-id', messageOutput.id);
+        messageDiv.setAttribute('data-sender', messageOutput.sender);
 
-    var messageContentDiv = document.createElement('div');
-    messageContentDiv.className = 'message-content';
+        if (messageOutput.sender === currentUsername) {
+            messageDiv.classList.add('sent');
+        } else {
+            messageDiv.classList.add('received');
+        }
 
-    let messageText = `${messageOutput.sender}: `;
+        const messageContentDiv = document.createElement('div');
+        messageContentDiv.className = 'message-content';
 
-    var textDiv = document.createElement('div');
-    textDiv.className = 'message-text';
-    textDiv.innerHTML = messageText;
-    messageContentDiv.appendChild(textDiv);
+        let messageText = `${messageOutput.sender}: ${messageOutput.content}`;
+        const textDiv = document.createElement('div');
+        textDiv.className = 'message-text';
+        textDiv.textContent = messageText;
+        messageContentDiv.appendChild(textDiv);
 
-    if (messageOutput.content) {
-        messageText += messageOutput.content;
-        textDiv.innerHTML = messageText;
-    }
 
     if (messageOutput.fileIds && messageOutput.fileNames && messageOutput.fileIds.length > 0) {
         var imagesDiv = document.createElement('div');
@@ -320,8 +323,11 @@ function showMessageOutput(messageOutput) {
         });
     }
 
-    messageDiv.appendChild(messageContentDiv);
-    document.getElementById('messages').appendChild(messageDiv);
+        messageDiv.appendChild(messageContentDiv);
+        messageDiv.oncontextmenu = (event) => showContextMenu(event, messageOutput.id);
+
+        document.getElementById('messages').appendChild(messageDiv);
+    }
 }
 
 window.onload = function () {

@@ -222,35 +222,6 @@ public class RoomController {
         return ResponseEntity.ok(availableUsers);
     }
 
-//    @DeleteMapping("/{roomId}/users/{userId}")
-//    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('TEACHER')")
-//    public ResponseEntity<?> removeUserFromRoom(@PathVariable String roomId, @PathVariable String userId, Principal principal) {
-//        User currentUser = userRepository.findByUsername(principal.getName())
-//                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + principal.getName()));
-//
-//        return roomRepository.findById(roomId)
-//                .map(room -> {
-//                    if (currentUser.getRole() == RoleName.ADMIN ||
-//                            room.getCreatorId().equals(currentUser.getId().toString()) ||
-//                            room.getModeratorIds().contains(currentUser.getId().toString())) {
-//
-//                        List<String> updatedUserIds = new ArrayList<>(room.getUserIds());
-//                        updatedUserIds.remove(userId);
-//                        room.setUserIds(updatedUserIds);
-//
-//                        List<String> updatedModeratorIds = new ArrayList<>(room.getModeratorIds());
-//                        updatedModeratorIds.remove(userId);
-//                        room.setModeratorIds(updatedModeratorIds);
-//
-//                        roomRepository.save(room);
-//                        return ResponseEntity.ok().body("User removed successfully");
-//                    } else {
-//                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Forbidden");
-//                    }
-//                })
-//                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Room not found"));
-//    }
-
     @DeleteMapping("/{roomId}/users/{userId}")
     public ResponseEntity<?> removeUserFromRoom(@PathVariable String roomId, @PathVariable String userId, Principal principal) {
         User currentUser = userRepository.findByUsername(principal.getName())

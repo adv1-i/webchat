@@ -6,7 +6,7 @@ document.getElementById('addFileToMessage').addEventListener('click', function()
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.multiple = true;
-    fileInput.addEventListener('change', handleFileSelection);
+    fileInput.addEventListener('change', isEditing ? handleFileSelectionForEdit : handleFileSelection);
     fileInput.click();
 });
 
@@ -53,16 +53,31 @@ function updateFileList() {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
 
-        if (file.type.startsWith('image/')) {
-            const img = document.createElement('img');
-            img.className = 'file-preview';
-            img.src = URL.createObjectURL(file);
-            fileItem.appendChild(img);
+        if (file.isExisting) {
+            if (file.isImage) {
+                const img = document.createElement('img');
+                img.className = 'file-preview';
+                img.src = `/api/files/${file.fileId}`;
+                img.alt = file.name;
+                fileItem.appendChild(img);
+            } else {
+                const icon = document.createElement('img');
+                icon.className = 'file-icon';
+                icon.src = '/svg/doc.svg';
+                fileItem.appendChild(icon);
+            }
         } else {
-            const icon = document.createElement('img');
-            icon.className = 'file-icon';
-            icon.src = '/svg/doc.svg'; // Make sure this path is correct
-            fileItem.appendChild(icon);
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.className = 'file-preview';
+                img.src = URL.createObjectURL(file);
+                fileItem.appendChild(img);
+            } else {
+                const icon = document.createElement('img');
+                icon.className = 'file-icon';
+                icon.src = '/svg/doc.svg';
+                fileItem.appendChild(icon);
+            }
         }
 
         const fileName = document.createElement('span');
@@ -81,7 +96,9 @@ function updateFileList() {
 }
 
 function removeFile(index) {
-    URL.revokeObjectURL(selectedFiles[index]); // Revoke the object URL to free up memory
+    if (selectedFiles[index].isExisting) {
+        URL.revokeObjectURL(selectedFiles[index].fileId); // Revoke the object URL to free up memory
+    }
     selectedFiles.splice(index, 1);
     updateFileList();
     updateSendButton();
@@ -92,11 +109,14 @@ function updateSendButton() {
     const sendMessageButton = document.getElementById("sendMessageButton");
     const hasContent = messageInput.value.trim() !== "" || selectedFiles.length > 0;
 
-    if (hasContent) {
+    if (isEditing) {
+        sendMessageButton.innerHTML = '<img src="/svg/edited.svg" alt="Edit">';
+        sendMessageButton.onclick = confirmEdit;
+    } else if (hasContent) {
         sendMessageButton.innerHTML = '<img src="/svg/send.svg" alt="send">';
-        sendMessageButton.setAttribute("onclick", "sendMessage()");
+        sendMessageButton.onclick = sendMessage;
     } else {
         sendMessageButton.innerHTML = '<img src="/svg/mic.svg" alt="mic">';
-        sendMessageButton.setAttribute("onclick", "sendVoiceMessage()");
+        // sendMessageButton.onclick = sendVoiceMessage;
     }
 }

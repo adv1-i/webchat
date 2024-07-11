@@ -91,6 +91,43 @@ public class MessageService {
     public List<Message> getMessagesByRoomId(String roomId) {
         return messageRepository.findByRoomId(roomId);
     }
+
+    public Message editMessage(String messageId, String updatedContent, MessageType messageType, List<String> existingFiles, List<MultipartFile> newFiles) throws IOException {
+        Message existingMessage = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        existingMessage.addEditHistory(existingMessage.getContent(), new Date());
+        existingMessage.setContent(updatedContent);
+        existingMessage.setMessageType(messageType);
+
+        List<String> updatedFileIds = new ArrayList<>();
+        List<String> updatedFileNames = new ArrayList<>();
+
+        // Keep existing files
+        if (existingFiles != null && !existingFiles.isEmpty()) {
+            for (int i = 0; i < existingFiles.size(); i++) {
+                String fileId = existingFiles.get(i);
+                String fileName = existingMessage.getFileNames().get(existingMessage.getFileIds().indexOf(fileId));
+                updatedFileIds.add(fileId);
+                updatedFileNames.add(fileName);
+            }
+        }
+
+        // Add new files
+        if (newFiles != null && !newFiles.isEmpty()) {
+            for (MultipartFile file : newFiles) {
+                String fileId = gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(), file.getContentType()).toString();
+                updatedFileIds.add(fileId);
+                updatedFileNames.add(file.getOriginalFilename());
+            }
+        }
+
+        existingMessage.setFileIds(updatedFileIds);
+        existingMessage.setFileNames(updatedFileNames);
+
+        return messageRepository.save(existingMessage);
+    }
+
 }
 
 

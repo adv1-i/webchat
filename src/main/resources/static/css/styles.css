@@ -838,3 +838,47 @@ body {
     margin-left: 5px;
 }
 
+.context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.context-menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu li {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.context-menu li:hover {
+    background-color: #f0f0f0;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 4px;
+    z-index: 1001;
+}
+
+.notification.error {
+    background-color: #f44336;
+}
+
+.edited-indicator {
+    font-size: 0.8em;
+    color: #888;
+    font-style: italic;
+}
+

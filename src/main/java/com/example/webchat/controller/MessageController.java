@@ -1,5 +1,6 @@
 package com.example.webchat.controller;
 
+import com.example.webchat.enums.MessageType;
 import com.example.webchat.exception.MaxFileSizeExceededException;
 import com.example.webchat.exception.MaxFilesExceededException;
 import com.example.webchat.service.MessageService;
@@ -47,6 +48,22 @@ public class MessageController {
     @GetMapping("/room/{roomId}")
     public ResponseEntity<List<Message>> getMessagesByRoomId(@PathVariable String roomId) {
         return ResponseEntity.ok(messageService.getMessagesByRoomId(roomId));
+    }
+
+    @PutMapping("/{messageId}")
+    public ResponseEntity<Message> editMessage(
+            @PathVariable String messageId,
+            @RequestParam String content,
+            @RequestParam MessageType messageType,
+            @RequestParam(required = false) List<String> existingFiles,
+            @RequestParam(required = false) List<MultipartFile> newFiles) {
+        try {
+            Message editedMessage = messageService.editMessage(messageId, content, messageType, existingFiles, newFiles);
+            return ResponseEntity.ok(editedMessage);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
 

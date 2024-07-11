@@ -104,7 +104,7 @@
       <!-- Динамическое заполнение списка пользователей -->
     </ul>
     <div class="popup_lower_part">
-      <button type="submit" class="leave_room_button" onclick="leaveRoom()">
+      <button type="submit" class="leave_room_button" id="leaveRoomButton" onclick="leaveRoom()">
         Выйти из чата
       </button>
     </div>
@@ -148,5 +148,6 @@
 <script th:src="@{/js/roomDetailsPopup.js}"></script>
 <script th:src="@{/js/file.js}"></script>
 <script th:src="@{/js/addUsers.js}"></script>
+<script th:src="@{/js/editMessage.js}"></script>
 </body>
 </html>

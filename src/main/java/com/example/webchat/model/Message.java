@@ -6,6 +6,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -22,6 +24,13 @@ public class Message {
     private MessageStatus messageStatus = MessageStatus.SENT;
     private List<String> fileIds;
     private List<String> fileNames;
+    private List<EditHistory> editHistory = new ArrayList<>();
+
+    public void addEditHistory(String oldContent, Date editTimestamp) {
+        EditHistory editHistory = new EditHistory(oldContent, editTimestamp, fileIds, fileNames);
+        this.editHistory.add(editHistory);
+    }
+
 
 
     public String getId() {
