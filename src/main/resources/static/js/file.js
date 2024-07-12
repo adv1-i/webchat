@@ -97,7 +97,7 @@ function updateFileList() {
 
 function removeFile(index) {
     if (selectedFiles[index].isExisting) {
-        URL.revokeObjectURL(selectedFiles[index].fileId); // Revoke the object URL to free up memory
+        URL.revokeObjectURL(selectedFiles[index].fileId);
     }
     selectedFiles.splice(index, 1);
     updateFileList();

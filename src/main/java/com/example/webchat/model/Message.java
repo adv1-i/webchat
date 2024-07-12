@@ -33,6 +33,13 @@ public class Message {
     @Transient
     private String formattedTime;
 
+    @JsonProperty("isForwarded")
+    private boolean isForwarded;
+    @JsonProperty("originalSender")
+    private String originalSender;
+    @JsonProperty("originalRoomId")
+    private String originalRoomId;
+
     public void addEditHistory(String oldContent, Date editTimestamp, List<String> fileIds, List<String> fileNames) {
         EditHistory editHistory = new EditHistory(oldContent, editTimestamp, fileIds, fileNames);
         this.editHistory.add(editHistory);
@@ -135,6 +142,30 @@ public class Message {
 
     public void setFormattedTime(String formattedTime) {
         this.formattedTime = formattedTime;
+    }
+
+    public void setIsForwarded(boolean forwarded) {
+        isForwarded = forwarded;
+    }
+
+    public void setOriginalSender(String originalSender) {
+        this.originalSender = originalSender;
+    }
+
+    public void setOriginalRoomId(String originalRoomId) {
+        this.originalRoomId = originalRoomId;
+    }
+
+    public boolean isForwarded() {
+        return isForwarded;
+    }
+
+    public String getOriginalSender() {
+        return originalSender;
+    }
+
+    public String getOriginalRoomId() {
+        return originalRoomId;
     }
 }
 

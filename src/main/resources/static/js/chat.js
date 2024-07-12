@@ -29,6 +29,16 @@ function connect() {
         subscribeToUserStatus();
         sendUserStatus('ONLINE');
     });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('.message')) {
+            if (selectedMessageElement) {
+                selectedMessageElement.style.backgroundColor = '';
+                selectedMessageElement = null;
+            }
+            removeForwardButton();
+        }
+    });
 }
 
 function sendUserStatus(status) {
@@ -136,6 +146,12 @@ function joinRoom(roomId) {
             updateRoomDetails(roomId);
             getAvailableUsers(roomId);
         });
+
+    if (selectedMessageElement) {
+        selectedMessageElement.style.backgroundColor = '';
+        selectedMessageElement = null;
+    }
+    removeForwardButton();
 }
 
 function updateRoomDetails(roomId) {
@@ -228,8 +244,7 @@ function sendMessage() {
                     return response.json();
                 })
                 .then(message => {
-                    // Удаляем локальное отображение сообщения
-                    // showMessageOutput(message);
+                    showMessageOutput(message);
                     clearMessageInput();
                 })
                 .catch(error => {
@@ -243,18 +258,16 @@ function sendMessage() {
                 roomId: currentRoomId,
                 recipients: currentRecipients,
                 timestamp: new Date(),
-                formattedTime: formatTime(new Date())
+                formattedTime: formatTime(new Date()),
+                isEdited: false
             };
 
             stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(message));
-            // Удаляем локальное отображение сообщения
-            // showMessageOutput(message);
             clearMessageInput();
         }
     }
 }
 
-// Добавим функцию для форматирования времени
 function formatTime(date) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
@@ -283,6 +296,7 @@ function showMessageOutput(messageOutput) {
         messageDiv.className = 'message';
         messageDiv.setAttribute('data-message-id', messageOutput.id);
         messageDiv.setAttribute('data-sender', messageOutput.sender);
+        messageDiv.setAttribute('data-forwarded', messageOutput.isForwarded);
 
         if (messageOutput.sender === currentUsername) {
             messageDiv.classList.add('sent');
@@ -303,6 +317,18 @@ function showMessageOutput(messageOutput) {
             editedIndicator.className = 'edited-indicator';
             editedIndicator.textContent = ' (ред.)';
             textDiv.appendChild(editedIndicator);
+        }
+
+        messageDiv.onclick = (event) => {
+            event.stopPropagation();
+            selectMessage(messageDiv, messageOutput.id);
+        };
+
+        if (messageOutput.isForwarded) {
+            const forwardedInfo = document.createElement('div');
+            forwardedInfo.className = 'forwarded-info';
+            forwardedInfo.textContent = `Forwarded from ${messageOutput.originalSender}`;
+            messageContentDiv.insertBefore(forwardedInfo, messageContentDiv.firstChild);
         }
 
         messageContentDiv.appendChild(textDiv);
@@ -351,6 +377,9 @@ function showMessageOutput(messageOutput) {
         messageDiv.oncontextmenu = (event) => showContextMenu(event, messageOutput.id);
 
         document.getElementById('messages').appendChild(messageDiv);
+
+        console.log('Received message:', messageOutput);
+
     }
 }
 

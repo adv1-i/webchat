@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -102,6 +103,10 @@ public class MessageService {
             throw new RuntimeException("You are not authorized to edit this message");
         }
 
+        if (existingMessage.isForwarded()) {
+            throw new RuntimeException("Forwarded messages cannot be edited");
+        }
+
         existingMessage.addEditHistory(existingMessage.getContent(), new Date(), existingMessage.getFileIds(), existingMessage.getFileNames());
         existingMessage.setContent(updatedContent);
         existingMessage.setMessageType(messageType);
@@ -118,7 +123,6 @@ public class MessageService {
             }
         }
 
-        // Add new files
         if (newFiles != null && !newFiles.isEmpty()) {
             for (MultipartFile file : newFiles) {
                 String fileId = gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(), file.getContentType()).toString();
@@ -141,6 +145,25 @@ public class MessageService {
         return messageTimestamp.toInstant()
                 .atZone(userTimeZone)
                 .format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
+    public Message forwardMessage(String messageId, String targetRoomId, String forwardedBy) {
+        Message originalMessage = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        Message forwardedMessage = new Message();
+        forwardedMessage.setContent(originalMessage.getContent());
+        forwardedMessage.setSender(forwardedBy);
+        forwardedMessage.setRoomId(targetRoomId);
+        forwardedMessage.setTimestamp(new Date());
+        forwardedMessage.setMessageType(originalMessage.getMessageType());
+        forwardedMessage.setFileIds(originalMessage.getFileIds());
+        forwardedMessage.setFileNames(originalMessage.getFileNames());
+        forwardedMessage.setIsForwarded(true);
+        forwardedMessage.setOriginalSender(originalMessage.getSender());
+        forwardedMessage.setOriginalRoomId(originalMessage.getRoomId());
+
+        return messageRepository.save(forwardedMessage);
     }
 
 }

@@ -32,7 +32,6 @@ public class RoomService {
 
         if (room.getUserIds().size() == 2 && !room.isPrivate()) {
             room.setRoomType(RoomType.PERSONAL);
-            // Set room name to the recipient's name for PERSONAL rooms
             String recipientId = room.getUserIds().stream()
                     .filter(id -> !id.equals(creator.getId().toString()))
                     .findFirst()
@@ -61,11 +60,9 @@ public class RoomService {
                         room.setDescription(updatedRoom.getDescription());
                         room.setPrivate(updatedRoom.isPrivate());
 
-                        // Update both userIds and moderatorIds
                         room.setUserIds(updatedRoom.getUserIds());
                         room.setModeratorIds(updatedRoom.getModeratorIds());
 
-                        // Ensure that all moderators are also in the userIds list
                         Set<String> allUsers = new HashSet<>(room.getUserIds());
                         allUsers.addAll(room.getModeratorIds());
 

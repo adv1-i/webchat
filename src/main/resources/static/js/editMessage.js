@@ -7,19 +7,19 @@ let originalFiles = [];
 function showContextMenu(event, messageId) {
     event.preventDefault();
 
-    // Close existing context menu if any
     if (currentContextMenu) {
         currentContextMenu.remove();
     }
 
     const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
     const messageSender = messageElement.getAttribute('data-sender');
+    const isForwarded = messageElement.getAttribute('data-forwarded') === 'true';
 
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
 
     let menuItems = '';
-    if (messageSender === currentUsername) {
+    if (messageSender === currentUsername && !isForwarded) {
         menuItems += `<li onclick="editMessage('${messageId}')">Редактировать</li>`;
     }
     menuItems += `<li onclick="deleteMessage('${messageId}')">Удалить</li>`;
@@ -154,7 +154,7 @@ function updateMessageInDOM(editedMessage) {
     const messageElement = document.querySelector(`[data-message-id="${editedMessage.id}"]`);
     if (messageElement) {
         const messageContentDiv = messageElement.querySelector('.message-content');
-        messageContentDiv.innerHTML = ''; // Clear content
+        messageContentDiv.innerHTML = '';
 
         let messageText = `${editedMessage.sender}: ${editedMessage.content}`;
         const textDiv = document.createElement('div');
@@ -162,7 +162,6 @@ function updateMessageInDOM(editedMessage) {
         textDiv.textContent = messageText;
         messageContentDiv.appendChild(textDiv);
 
-        // Обновляем файлы, если они есть
         if (editedMessage.fileIds && editedMessage.fileNames && editedMessage.fileIds.length > 0) {
             const imagesDiv = document.createElement('div');
             imagesDiv.className = 'message-images';
@@ -192,11 +191,12 @@ function updateMessageInDOM(editedMessage) {
             }
         }
 
-        // Добавляем индикатор редактирования
-        const editedIndicator = document.createElement('span');
-        editedIndicator.className = 'edited-indicator';
-        editedIndicator.textContent = ' (ред.)';
-        textDiv.appendChild(editedIndicator);
+        if (editedMessage.isEdited) {
+            const editedIndicator = document.createElement('span');
+            editedIndicator.className = 'edited-indicator';
+            editedIndicator.textContent = ' (ред.)';
+            textDiv.appendChild(editedIndicator);
+        }
 
         let timeSpan = messageElement.querySelector('.message-time');
         if (!timeSpan) {
@@ -239,7 +239,6 @@ function resetEditState() {
     editingMessageId = null;
     updateSendButton();
 
-    // Remove cancel button
     const cancelButton = document.getElementById('cancelEditButton');
     if (cancelButton) {
         cancelButton.remove();

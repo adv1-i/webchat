@@ -892,3 +892,47 @@ body {
     font-style: italic;
 }
 
+.forward-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+.forward-popup ul {
+    list-style-type: none;
+    padding: 0;
+}
+.forward-popup li {
+    cursor: pointer;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+.forward-popup li:hover {
+    background-color: #f5f5f5;
+}
+.forwarded-info {
+    font-style: italic;
+    color: #888;
+    font-size: 0.9em;
+}
+
+.message.selected {
+    background-color: #e0e0e0 !important;
+}
+
+.forward-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    margin-left: 10px;
+}
+
+.forward-button img {
+    width: 20px;
+    height: 20px;
+}

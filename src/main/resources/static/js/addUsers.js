@@ -25,16 +25,11 @@ function addUsersToRoom() {
             return response.json();
         })
         .then(updatedRoom => {
-            // Обновляем список пользователей в комнате
             updateRoomDetails(currentRoomId);
-
-            // Обновляем список доступных пользователей
             updateAvailableUsersList(selectedUsers);
 
-            // Закрываем popup
             document.getElementById('newPopup').style.display = 'none';
 
-            // Очищаем выбранные чекбоксы
             checkboxes.forEach(checkbox => {
                 checkbox.checked = false;
             });

@@ -63,8 +63,10 @@ public class MessageController {
         try {
             Message editedMessage = messageService.editMessage(messageId, content, messageType, existingFiles, newFiles, principal.getName());
             return ResponseEntity.ok(editedMessage);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("An error occurred while editing the message");
         }
     }
     @DeleteMapping("/{messageId}")
@@ -83,6 +85,19 @@ public class MessageController {
             message.setFormattedTime(formattedTime);
         });
         return ResponseEntity.ok(messages);
+    }
+
+    @PostMapping("/forward")
+    public ResponseEntity<?> forwardMessage(
+            @RequestParam String messageId,
+            @RequestParam String targetRoomId,
+            Principal principal) {
+        try {
+            Message forwardedMessage = messageService.forwardMessage(messageId, targetRoomId, principal.getName());
+            return ResponseEntity.ok(forwardedMessage);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
 

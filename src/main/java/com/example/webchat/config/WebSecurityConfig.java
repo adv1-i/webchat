@@ -17,7 +17,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // Отключение CSRF-защиты для упрощения
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/rooms/create", "/api/rooms/edit/**").hasAnyAuthority("ADMIN", "TEACHER")
                         .requestMatchers("/api/rooms/**", "/api/messages/**", "/api/files/**").authenticated()
