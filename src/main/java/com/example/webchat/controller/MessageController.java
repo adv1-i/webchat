@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
+import java.time.ZoneId;
 import java.util.List;
 
 @RestController
@@ -45,25 +47,42 @@ public class MessageController {
         }
     }
 
-    @GetMapping("/room/{roomId}")
-    public ResponseEntity<List<Message>> getMessagesByRoomId(@PathVariable String roomId) {
-        return ResponseEntity.ok(messageService.getMessagesByRoomId(roomId));
-    }
+//    @GetMapping("/room/{roomId}")
+//    public ResponseEntity<List<Message>> getMessagesByRoomId(@PathVariable String roomId) {
+//        return ResponseEntity.ok(messageService.getMessagesByRoomId(roomId));
+//    }
 
     @PutMapping("/{messageId}")
-    public ResponseEntity<Message> editMessage(
+    public ResponseEntity<?> editMessage(
             @PathVariable String messageId,
             @RequestParam String content,
             @RequestParam MessageType messageType,
             @RequestParam(required = false) List<String> existingFiles,
-            @RequestParam(required = false) List<MultipartFile> newFiles) {
+            @RequestParam(required = false) List<MultipartFile> newFiles,
+            Principal principal) {
         try {
-            Message editedMessage = messageService.editMessage(messageId, content, messageType, existingFiles, newFiles);
+            Message editedMessage = messageService.editMessage(messageId, content, messageType, existingFiles, newFiles, principal.getName());
             return ResponseEntity.ok(editedMessage);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+    @DeleteMapping("/{messageId}")
+    public ResponseEntity<Void> deleteMessage(@PathVariable String messageId) {
+        messageService.deleteMessage(messageId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/room/{roomId}")
+    public ResponseEntity<List<Message>> getMessagesByRoomId(@PathVariable String roomId,
+                                                             @RequestParam(required = false) String userTimeZone) {
+        ZoneId zoneId = userTimeZone != null ? ZoneId.of(userTimeZone) : ZoneId.systemDefault();
+        List<Message> messages = messageService.getMessagesByRoomId(roomId);
+        messages.forEach(message -> {
+            String formattedTime = messageService.formatMessageTime(message.getTimestamp(), zoneId);
+            message.setFormattedTime(formattedTime);
+        });
+        return ResponseEntity.ok(messages);
     }
 }
 

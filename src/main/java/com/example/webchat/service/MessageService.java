@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -92,18 +93,22 @@ public class MessageService {
         return messageRepository.findByRoomId(roomId);
     }
 
-    public Message editMessage(String messageId, String updatedContent, MessageType messageType, List<String> existingFiles, List<MultipartFile> newFiles) throws IOException {
+    public Message editMessage(String messageId, String updatedContent, MessageType messageType,
+                               List<String> existingFiles, List<MultipartFile> newFiles, String username) throws IOException {
         Message existingMessage = messageRepository.findById(messageId)
-                .orElseThrow(() -> new RuntimeException("Message not found"));
+                .orElseThrow(() -> new RuntimeException("Message not found"));;
 
-        existingMessage.addEditHistory(existingMessage.getContent(), new Date());
+        if (!existingMessage.getSender().equals(username)) {
+            throw new RuntimeException("You are not authorized to edit this message");
+        }
+
+        existingMessage.addEditHistory(existingMessage.getContent(), new Date(), existingMessage.getFileIds(), existingMessage.getFileNames());
         existingMessage.setContent(updatedContent);
         existingMessage.setMessageType(messageType);
 
         List<String> updatedFileIds = new ArrayList<>();
         List<String> updatedFileNames = new ArrayList<>();
 
-        // Keep existing files
         if (existingFiles != null && !existingFiles.isEmpty()) {
             for (int i = 0; i < existingFiles.size(); i++) {
                 String fileId = existingFiles.get(i);
@@ -124,8 +129,18 @@ public class MessageService {
 
         existingMessage.setFileIds(updatedFileIds);
         existingMessage.setFileNames(updatedFileNames);
+        existingMessage.setEdited(true);
 
         return messageRepository.save(existingMessage);
+    }
+    public void deleteMessage(String messageId) {
+        messageRepository.deleteById(messageId);
+    }
+
+    public String formatMessageTime(Date messageTimestamp, ZoneId userTimeZone) {
+        return messageTimestamp.toInstant()
+                .atZone(userTimeZone)
+                .format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
 }

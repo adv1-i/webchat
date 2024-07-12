@@ -243,6 +243,8 @@ body {
 .message-content {
     display: flex;
     flex-direction: column;
+    padding-bottom: 20px;
+    position: relative;
 }
 .message-text {
     margin-bottom: 10px;
@@ -270,6 +272,14 @@ body {
     width: 20px;
     height: 20px;
     margin-right: 5px;
+}
+
+.message-time {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    font-size: 0.8em;
+    color: #888;
 }
 
 .title_h1_text_chat {

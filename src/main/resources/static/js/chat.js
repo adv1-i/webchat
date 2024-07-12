@@ -66,7 +66,8 @@ function loadRooms() {
 }
 
 function loadMessages(roomId) {
-    fetch(`/api/messages/room/${roomId}`)
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    fetch(`/api/messages/room/${roomId}?userTimeZone=${encodeURIComponent(userTimeZone)}`)
         .then(response => response.json())
         .then(messages => {
             const messagesDiv = document.getElementById('messages');
@@ -227,7 +228,8 @@ function sendMessage() {
                     return response.json();
                 })
                 .then(message => {
-                    showMessageOutput(message);
+                    // Удаляем локальное отображение сообщения
+                    // showMessageOutput(message);
                     clearMessageInput();
                 })
                 .catch(error => {
@@ -239,13 +241,22 @@ function sendMessage() {
                 content: messageContent,
                 sender: currentUsername,
                 roomId: currentRoomId,
-                recipients: currentRecipients
+                recipients: currentRecipients,
+                timestamp: new Date(),
+                formattedTime: formatTime(new Date())
             };
 
             stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(message));
+            // Удаляем локальное отображение сообщения
+            // showMessageOutput(message);
             clearMessageInput();
         }
     }
+}
+
+// Добавим функцию для форматирования времени
+function formatTime(date) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function clearMessageInput() {
@@ -286,6 +297,14 @@ function showMessageOutput(messageOutput) {
         const textDiv = document.createElement('div');
         textDiv.className = 'message-text';
         textDiv.textContent = messageText;
+
+        if (messageOutput.isEdited) {
+            const editedIndicator = document.createElement('span');
+            editedIndicator.className = 'edited-indicator';
+            editedIndicator.textContent = ' (ред.)';
+            textDiv.appendChild(editedIndicator);
+        }
+
         messageContentDiv.appendChild(textDiv);
 
 
@@ -322,6 +341,11 @@ function showMessageOutput(messageOutput) {
             }
         });
     }
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'message-time';
+        timeSpan.textContent = messageOutput.formattedTime || formatTime(new Date(messageOutput.timestamp));
+        messageContentDiv.appendChild(timeSpan);
 
         messageDiv.appendChild(messageContentDiv);
         messageDiv.oncontextmenu = (event) => showContextMenu(event, messageOutput.id);

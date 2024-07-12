@@ -1,6 +1,8 @@
 let isEditing = false;
 let editingMessageId = null;
 let currentContextMenu = null;
+let originalContent = '';
+let originalFiles = [];
 
 function showContextMenu(event, messageId) {
     event.preventDefault();
@@ -10,13 +12,20 @@ function showContextMenu(event, messageId) {
         currentContextMenu.remove();
     }
 
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    const messageSender = messageElement.getAttribute('data-sender');
+
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
-    contextMenu.innerHTML = `
-        <ul>
-            <li onclick="editMessage('${messageId}')">Редактировать</li>
-        </ul>
-    `;
+
+    let menuItems = '';
+    if (messageSender === currentUsername) {
+        menuItems += `<li onclick="editMessage('${messageId}')">Редактировать</li>`;
+    }
+    menuItems += `<li onclick="deleteMessage('${messageId}')">Удалить</li>`;
+
+    contextMenu.innerHTML = `<ul>${menuItems}</ul>`;
+
     document.body.appendChild(contextMenu);
     contextMenu.style.top = `${event.clientY}px`;
     contextMenu.style.left = `${event.clientX}px`;
@@ -37,7 +46,6 @@ function editMessage(messageId) {
     const messageContent = messageElement.querySelector('.message-text').textContent;
     const messageInput = document.getElementById('messageInput');
 
-    // Remove " (ред.)" from the content if it exists
     const cleanContent = messageContent.replace(`${messageElement.dataset.sender}: `, '').replace(' (ред.)', '');
     messageInput.value = cleanContent;
     adjustTextareaHeight();
@@ -45,9 +53,11 @@ function editMessage(messageId) {
     isEditing = true;
     editingMessageId = messageId;
 
+    originalContent = cleanContent;
+    originalFiles = Array.from(selectedFiles);
+
     updateSendButton();
 
-    // Add cancel button
     const cancelButton = document.createElement('button');
     cancelButton.id = 'cancelEditButton';
     cancelButton.innerHTML = 'Отменить';
@@ -84,6 +94,8 @@ function editMessage(messageId) {
         });
     }
     updateFileList();
+    currentContextMenu.remove();
+    currentContextMenu = null;
 }
 
 function confirmEdit() {
@@ -92,7 +104,16 @@ function confirmEdit() {
     const messageInput = document.getElementById('messageInput');
     const updatedContent = messageInput.value.trim();
 
-    // Prevent empty messages
+    const contentUnchanged = updatedContent === originalContent;
+    const filesUnchanged = JSON.stringify(selectedFiles) === JSON.stringify(originalFiles);
+
+    if (contentUnchanged && filesUnchanged) {
+        cancelEdit();
+        return;
+    }
+
+    if (!isEditing || !editingMessageId) return;
+
     if (updatedContent === '') {
         alert('Сообщение не может быть пустым');
         return;
@@ -102,13 +123,11 @@ function confirmEdit() {
     formData.append('content', updatedContent);
     formData.append('messageType', selectedFiles.length > 0 ? 'FILE' : 'TEXT');
 
-    // Append existing files
     const existingFiles = selectedFiles.filter(file => file.isExisting);
     existingFiles.forEach(file => {
         formData.append('existingFiles', file.fileId);
     });
 
-    // Append new files
     const newFiles = selectedFiles.filter(file => !file.isExisting);
     newFiles.forEach(file => {
         formData.append('newFiles', file);
@@ -178,6 +197,14 @@ function updateMessageInDOM(editedMessage) {
         editedIndicator.className = 'edited-indicator';
         editedIndicator.textContent = ' (ред.)';
         textDiv.appendChild(editedIndicator);
+
+        let timeSpan = messageElement.querySelector('.message-time');
+        if (!timeSpan) {
+            timeSpan = document.createElement('span');
+            timeSpan.className = 'message-time';
+            messageContentDiv.appendChild(timeSpan);
+        }
+        timeSpan.textContent = editedMessage.formattedTime || formatTime(new Date(editedMessage.timestamp));
     }
 }
 

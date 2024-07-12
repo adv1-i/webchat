@@ -2,8 +2,10 @@ package com.example.webchat.model;
 
 import com.example.webchat.enums.MessageStatus;
 import com.example.webchat.enums.MessageType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Transient;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -25,10 +27,16 @@ public class Message {
     private List<String> fileIds;
     private List<String> fileNames;
     private List<EditHistory> editHistory = new ArrayList<>();
+    @JsonProperty("isEdited")
+    private boolean isEdited = false;
 
-    public void addEditHistory(String oldContent, Date editTimestamp) {
+    @Transient
+    private String formattedTime;
+
+    public void addEditHistory(String oldContent, Date editTimestamp, List<String> fileIds, List<String> fileNames) {
         EditHistory editHistory = new EditHistory(oldContent, editTimestamp, fileIds, fileNames);
         this.editHistory.add(editHistory);
+        this.isEdited = true;
     }
 
 
@@ -111,6 +119,22 @@ public class Message {
 
     public void setMessageType(MessageType messageType) {
         this.messageType = messageType;
+    }
+
+    public boolean isEdited() {
+        return isEdited;
+    }
+
+    public void setEdited(boolean edited) {
+        isEdited = edited;
+    }
+
+    public String getFormattedTime() {
+        return formattedTime;
+    }
+
+    public void setFormattedTime(String formattedTime) {
+        this.formattedTime = formattedTime;
     }
 }
 
