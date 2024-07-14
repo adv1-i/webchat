@@ -1,5 +1,6 @@
 package com.example.webchat.controller;
 
+import com.example.webchat.enums.MessageStatus;
 import com.example.webchat.enums.MessageType;
 import com.example.webchat.exception.MaxFileSizeExceededException;
 import com.example.webchat.exception.MaxFilesExceededException;
@@ -98,6 +99,31 @@ public class MessageController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @PostMapping("/{messageId}/status")
+    public ResponseEntity<Message> updateMessageStatus(
+            @PathVariable String messageId,
+            @RequestParam MessageStatus status,
+            Principal principal) {
+        Message updatedMessage = messageService.updateMessageStatus(messageId, status, principal.getName());
+        return ResponseEntity.ok(updatedMessage);
+    }
+
+    @PostMapping("/room/{roomId}/delivered")
+    public ResponseEntity<?> markMessagesAsDelivered(
+            @PathVariable String roomId,
+            Principal principal) {
+        messageService.markMessagesAsDelivered(roomId, principal.getName());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/room/{roomId}/read")
+    public ResponseEntity<?> markMessagesAsRead(
+            @PathVariable String roomId,
+            Principal principal) {
+        messageService.markMessagesAsRead(roomId, principal.getName());
+        return ResponseEntity.ok().build();
     }
 }
 

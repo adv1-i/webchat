@@ -274,13 +274,25 @@ body {
     margin-right: 5px;
 }
 
+.message-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 5px;
+}
+
 .message-time {
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
     font-size: 0.8em;
     color: #888;
+    margin-right: 5px;
 }
+
+.message-status {
+    width: 16px;
+    height: 16px;
+}
+
+
 
 .title_h1_text_chat {
     font-family: "Open Sans";
@@ -935,4 +947,9 @@ body {
 .forward-button img {
     width: 20px;
     height: 20px;
+}
+
+.message-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }

@@ -198,13 +198,22 @@ function updateMessageInDOM(editedMessage) {
             textDiv.appendChild(editedIndicator);
         }
 
-        let timeSpan = messageElement.querySelector('.message-time');
-        if (!timeSpan) {
-            timeSpan = document.createElement('span');
-            timeSpan.className = 'message-time';
-            messageContentDiv.appendChild(timeSpan);
-        }
+        const footerDiv = document.createElement('div');
+        footerDiv.className = 'message-footer';
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'message-time';
         timeSpan.textContent = editedMessage.formattedTime || formatTime(new Date(editedMessage.timestamp));
+        footerDiv.appendChild(timeSpan);
+
+        if (editedMessage.sender === currentUsername) {
+            const statusIcon = document.createElement('img');
+            statusIcon.className = `message-status ${editedMessage.messageStatus.toLowerCase()}`;
+            statusIcon.src = getStatusIcon(editedMessage.messageStatus);
+            footerDiv.appendChild(statusIcon);
+        }
+
+        messageContentDiv.appendChild(footerDiv);
     }
 }
 

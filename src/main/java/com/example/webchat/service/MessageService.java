@@ -1,13 +1,16 @@
 package com.example.webchat.service;
 
+import com.example.webchat.enums.MessageStatus;
 import com.example.webchat.enums.MessageType;
 import com.example.webchat.exception.MaxFileSizeExceededException;
 import com.example.webchat.exception.MaxFilesExceededException;
 import com.example.webchat.repository.MessageRepository;
 import com.example.webchat.model.Message;
+import com.example.webchat.utils.MessageStatusUpdate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,7 +21,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -34,6 +36,9 @@ public class MessageService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     public Message sendMessage(Message message) {
         LocalDateTime now = LocalDateTime.now();
@@ -166,6 +171,42 @@ public class MessageService {
         return messageRepository.save(forwardedMessage);
     }
 
+    public Message updateMessageStatus(String messageId, MessageStatus status, String updatedBy) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        if (!message.getSender().equals(updatedBy)) {
+            message.setMessageStatus(status);
+            Message updatedMessage = messageRepository.save(message);
+
+            messagingTemplate.convertAndSendToUser(
+                    message.getSender(),
+                    "/queue/message-status",
+                    new MessageStatusUpdate(messageId, status)
+            );
+
+            return updatedMessage;
+        }
+        return message;
+    }
+
+    public void markMessagesAsDelivered(String roomId, String recipientId) {
+        List<Message> messages = messageRepository.findByRoomIdAndMessageStatus(roomId, MessageStatus.SENT);
+        for (Message message : messages) {
+            if (!message.getSender().equals(recipientId)) {
+                updateMessageStatus(message.getId(), MessageStatus.DELIVERED, recipientId);
+            }
+        }
+    }
+
+    public void markMessagesAsRead(String roomId, String recipientId) {
+        List<Message> messages = messageRepository.findByRoomIdAndMessageStatusIn(roomId, List.of(MessageStatus.SENT, MessageStatus.DELIVERED));
+        for (Message message : messages) {
+            if (!message.getSender().equals(recipientId)) {
+                updateMessageStatus(message.getId(), MessageStatus.READ, recipientId);
+            }
+        }
+    }
 }
 
 

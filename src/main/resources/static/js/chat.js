@@ -27,6 +27,7 @@ function connect() {
         loadRooms();
         getCurrentUser();
         subscribeToUserStatus();
+        subscribeToMessageStatus();
         sendUserStatus('ONLINE');
     });
 
@@ -152,6 +153,21 @@ function joinRoom(roomId) {
         selectedMessageElement = null;
     }
     removeForwardButton();
+
+    fetch(`/api/messages/room/${roomId}/delivered`, {
+        method: 'POST'
+    }).then(() => {
+        markMessagesAsDelivered(roomId)
+            .then(() => console.log('Marked messages as delivered'))
+            .catch(error => console.error('Error marking messages as delivered:', error));
+    });
+
+    // Отмечаем сообщения как прочитанные, если окно в фокусе
+    if (document.hasFocus()) {
+        markMessagesAsRead(roomId)
+            .then(() => console.log('Marked messages as read'))
+            .catch(error => console.error('Error marking messages as read:', error));
+    }
 }
 
 function updateRoomDetails(roomId) {
@@ -333,53 +349,68 @@ function showMessageOutput(messageOutput) {
 
         messageContentDiv.appendChild(textDiv);
 
+        if (messageOutput.fileIds && messageOutput.fileNames && messageOutput.fileIds.length > 0) {
+            var imagesDiv = document.createElement('div');
+            imagesDiv.className = 'message-images';
 
-    if (messageOutput.fileIds && messageOutput.fileNames && messageOutput.fileIds.length > 0) {
-        var imagesDiv = document.createElement('div');
-        imagesDiv.className = 'message-images';
+            messageOutput.fileIds.forEach((fileId, index) => {
+                const fileName = messageOutput.fileNames[index].toLowerCase();
+                if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.gif')) {
+                    var img = document.createElement('img');
+                    img.src = `/api/files/${fileId}`;
+                    img.alt = fileName;
+                    imagesDiv.appendChild(img);
+                }
+            });
 
-        messageOutput.fileIds.forEach((fileId, index) => {
-            const fileName = messageOutput.fileNames[index].toLowerCase();
-            if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.gif')) {
-                var img = document.createElement('img');
-                img.src = `/api/files/${fileId}`;
-                img.alt = fileName;
-                imagesDiv.appendChild(img);
+            if (imagesDiv.children.length > 0) {
+                messageContentDiv.appendChild(imagesDiv);
             }
-        });
 
-        if (imagesDiv.children.length > 0) {
-            messageContentDiv.appendChild(imagesDiv);
+            messageOutput.fileIds.forEach((fileId, index) => {
+                const fileName = messageOutput.fileNames[index].toLowerCase();
+                if (!fileName.endsWith('.jpg') && !fileName.endsWith('.jpeg') && !fileName.endsWith('.png') && !fileName.endsWith('.gif')) {
+                    var fileDiv = document.createElement('a');
+                    fileDiv.className = 'message-file';
+                    fileDiv.href = `/api/files/${fileId}`;
+                    fileDiv.download = fileName;
+                    fileDiv.innerHTML = `
+                        <img src="/svg/doc.svg" alt="File">
+                        <span>${fileName}</span>
+                    `;
+                    messageContentDiv.appendChild(fileDiv);
+                }
+            });
         }
 
-        messageOutput.fileIds.forEach((fileId, index) => {
-            const fileName = messageOutput.fileNames[index].toLowerCase();
-            if (!fileName.endsWith('.jpg') && !fileName.endsWith('.jpeg') && !fileName.endsWith('.png') && !fileName.endsWith('.gif')) {
-                var fileDiv = document.createElement('a');
-                fileDiv.className = 'message-file';
-                fileDiv.href = `/api/files/${fileId}`;
-                fileDiv.download = fileName;
-                fileDiv.innerHTML = `
-                    <img src="/svg/doc.svg" alt="File">
-                    <span>${fileName}</span>
-                `;
-                messageContentDiv.appendChild(fileDiv);
-            }
-        });
-    }
+        const footerDiv = document.createElement('div');
+        footerDiv.className = 'message-footer';
 
         const timeSpan = document.createElement('span');
         timeSpan.className = 'message-time';
         timeSpan.textContent = messageOutput.formattedTime || formatTime(new Date(messageOutput.timestamp));
-        messageContentDiv.appendChild(timeSpan);
+        footerDiv.appendChild(timeSpan);
 
+        // Add message status icon
+        if (messageOutput.sender === currentUsername) {
+            const statusIcon = document.createElement('img');
+            statusIcon.className = `message-status ${messageOutput.messageStatus.toLowerCase()}`;
+            statusIcon.src = getStatusIcon(messageOutput.messageStatus);
+            footerDiv.appendChild(statusIcon);
+        }
+
+        messageContentDiv.appendChild(footerDiv);
         messageDiv.appendChild(messageContentDiv);
         messageDiv.oncontextmenu = (event) => showContextMenu(event, messageOutput.id);
 
         document.getElementById('messages').appendChild(messageDiv);
 
         console.log('Received message:', messageOutput);
+    }
 
+    // Отмечаем сообщение как прочитанное, только если оно не от текущего пользователя
+    if (messageOutput.sender !== currentUsername && document.hasFocus()) {
+        markMessageAsRead(messageOutput.id);
     }
 }
 
