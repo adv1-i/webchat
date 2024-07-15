@@ -651,6 +651,19 @@ body {
     color: #313232;
 }
 
+.popup_room_name {
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #313232;
+    border-radius: 10px;
+    height: 36px;
+    cursor: pointer;
+}
+
 .popup_member_last_activity {
     font-family: 'Open Sans';
     font-style: normal;
@@ -770,7 +783,8 @@ body {
 }
 
 .leave_room_button,
-.add_member_button {
+.add_member_button,
+.forward_message_button{
     width: 150px;
     height: 36px;
     background: #6A8EA6;
@@ -786,6 +800,11 @@ body {
     text-align: center;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+}
+
+.forward_message_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .user-status {
@@ -905,14 +924,12 @@ body {
 }
 
 .forward-popup {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
+    background-color: #F3F7F9;
+    width: 380px;
+    min-height: 472px;
+    border-radius: 10px;
     padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    position: relative;
 }
 .forward-popup ul {
     list-style-type: none;

@@ -1,8 +1,8 @@
 let isEditing = false;
 let editingMessageId = null;
 let currentContextMenu = null;
-let originalContent = '';
-let originalFiles = [];
+let originalContent = null;
+let originalFiles = null;
 
 function showContextMenu(event, messageId) {
     event.preventDefault();
@@ -43,18 +43,22 @@ function showContextMenu(event, messageId) {
 
 function editMessage(messageId) {
     const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+
     const messageContent = messageElement.querySelector('.message-text').textContent;
     const messageInput = document.getElementById('messageInput');
 
-    const cleanContent = messageContent.replace(`${messageElement.dataset.sender}: `, '').replace(' (ред.)', '');
-    messageInput.value = cleanContent;
+    originalContent = messageContent.replace(`${messageElement.dataset.sender}: `, '').replace(' (ред.)', '');
+    originalFiles = Array.from(messageElement.querySelectorAll('.message-images img, .message-file')).map(file => ({
+        isImage: file.tagName === 'IMG',
+        src: file.tagName === 'IMG' ? file.src : file.href,
+        name: file.tagName === 'IMG' ? file.alt : file.querySelector('span').textContent
+    }));
+
+    messageInput.value = originalContent;
     adjustTextareaHeight();
 
     isEditing = true;
     editingMessageId = messageId;
-
-    originalContent = cleanContent;
-    originalFiles = Array.from(selectedFiles);
 
     updateSendButton();
 
@@ -104,15 +108,13 @@ function confirmEdit() {
     const messageInput = document.getElementById('messageInput');
     const updatedContent = messageInput.value.trim();
 
-    const contentUnchanged = updatedContent === originalContent;
-    const filesUnchanged = JSON.stringify(selectedFiles) === JSON.stringify(originalFiles);
+    const contentChanged = updatedContent !== originalContent;
+    const filesChanged = !areFilesEqual(selectedFiles, originalFiles);
 
-    if (contentUnchanged && filesUnchanged) {
+    if (!contentChanged && !filesChanged) {
         cancelEdit();
         return;
     }
-
-    if (!isEditing || !editingMessageId) return;
 
     if (updatedContent === '') {
         alert('Сообщение не может быть пустым');
@@ -150,11 +152,26 @@ function confirmEdit() {
         });
 }
 
+function areFilesEqual(files1, files2) {
+    if (files1.length !== files2.length) return false;
+
+    for (let i = 0; i < files1.length; i++) {
+        const file1 = files1[i];
+        const file2 = files2[i];
+
+        if (file1.isImage !== file2.isImage) return false;
+        if (file1.name !== file2.name) return false;
+        if (file1.isImage && file1.src !== file2.src) return false;
+    }
+
+    return true;
+}
+
 function updateMessageInDOM(editedMessage) {
     const messageElement = document.querySelector(`[data-message-id="${editedMessage.id}"]`);
     if (messageElement) {
         const messageContentDiv = messageElement.querySelector('.message-content');
-        messageContentDiv.innerHTML = '';
+        messageContentDiv.innerHTML = ''; // Clear content
 
         let messageText = `${editedMessage.sender}: ${editedMessage.content}`;
         const textDiv = document.createElement('div');
@@ -162,6 +179,7 @@ function updateMessageInDOM(editedMessage) {
         textDiv.textContent = messageText;
         messageContentDiv.appendChild(textDiv);
 
+        // Обновляем файлы, если они есть
         if (editedMessage.fileIds && editedMessage.fileNames && editedMessage.fileIds.length > 0) {
             const imagesDiv = document.createElement('div');
             imagesDiv.className = 'message-images';
@@ -246,8 +264,11 @@ function cancelEdit() {
 function resetEditState() {
     isEditing = false;
     editingMessageId = null;
+    originalContent = null;
+    originalFiles = null;
     updateSendButton();
 
+    // Remove cancel button
     const cancelButton = document.getElementById('cancelEditButton');
     if (cancelButton) {
         cancelButton.remove();

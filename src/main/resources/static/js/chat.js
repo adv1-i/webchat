@@ -162,7 +162,6 @@ function joinRoom(roomId) {
             .catch(error => console.error('Error marking messages as delivered:', error));
     });
 
-    // Отмечаем сообщения как прочитанные, если окно в фокусе
     if (document.hasFocus()) {
         markMessagesAsRead(roomId)
             .then(() => console.log('Marked messages as read'))
@@ -391,7 +390,6 @@ function showMessageOutput(messageOutput) {
         timeSpan.textContent = messageOutput.formattedTime || formatTime(new Date(messageOutput.timestamp));
         footerDiv.appendChild(timeSpan);
 
-        // Add message status icon
         if (messageOutput.sender === currentUsername) {
             const statusIcon = document.createElement('img');
             statusIcon.className = `message-status ${messageOutput.messageStatus.toLowerCase()}`;
@@ -404,11 +402,8 @@ function showMessageOutput(messageOutput) {
         messageDiv.oncontextmenu = (event) => showContextMenu(event, messageOutput.id);
 
         document.getElementById('messages').appendChild(messageDiv);
-
-        console.log('Received message:', messageOutput);
     }
 
-    // Отмечаем сообщение как прочитанное, только если оно не от текущего пользователя
     if (messageOutput.sender !== currentUsername && document.hasFocus()) {
         markMessageAsRead(messageOutput.id);
     }

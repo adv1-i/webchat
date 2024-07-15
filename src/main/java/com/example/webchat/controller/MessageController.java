@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -62,12 +63,11 @@ public class MessageController {
             @RequestParam(required = false) List<MultipartFile> newFiles,
             Principal principal) {
         try {
-            Message editedMessage = messageService.editMessage(messageId, content, messageType, existingFiles, newFiles, principal.getName());
+            Message editedMessage = messageService.editMessage(messageId, content, messageType, existingFiles, newFiles,
+                                                                principal.getName());
             return ResponseEntity.ok(editedMessage);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("An error occurred while editing the message");
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
     @DeleteMapping("/{messageId}")

@@ -100,21 +100,29 @@ public class MessageService {
     }
 
     public Message editMessage(String messageId, String updatedContent, MessageType messageType,
-                               List<String> existingFiles, List<MultipartFile> newFiles, String username) throws IOException {
+                               List<String> existingFiles, List<MultipartFile> newFiles,
+                               String username) throws IOException {
+
         Message existingMessage = messageRepository.findById(messageId)
-                .orElseThrow(() -> new RuntimeException("Message not found"));;
+                .orElseThrow(() -> new RuntimeException("Message not found"));
 
         if (!existingMessage.getSender().equals(username)) {
             throw new RuntimeException("You are not authorized to edit this message");
         }
 
-        if (existingMessage.isForwarded()) {
-            throw new RuntimeException("Forwarded messages cannot be edited");
+        boolean contentChanged = !existingMessage.getContent().equals(updatedContent);
+        boolean filesChanged = !areFilesUnchanged(existingMessage, existingFiles, newFiles);
+
+        if (!contentChanged && !filesChanged) {
+            return existingMessage;
         }
 
-        existingMessage.addEditHistory(existingMessage.getContent(), new Date(), existingMessage.getFileIds(), existingMessage.getFileNames());
+        existingMessage.addEditHistory(existingMessage.getContent(), new Date(), existingMessage.getFileIds(),
+                                        existingMessage.getFileNames());
+
         existingMessage.setContent(updatedContent);
         existingMessage.setMessageType(messageType);
+        existingMessage.setEdited(true);
 
         List<String> updatedFileIds = new ArrayList<>();
         List<String> updatedFileNames = new ArrayList<>();
@@ -130,7 +138,8 @@ public class MessageService {
 
         if (newFiles != null && !newFiles.isEmpty()) {
             for (MultipartFile file : newFiles) {
-                String fileId = gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(), file.getContentType()).toString();
+                String fileId = gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(),
+                                                    file.getContentType()).toString();
                 updatedFileIds.add(fileId);
                 updatedFileNames.add(file.getOriginalFilename());
             }
@@ -138,10 +147,29 @@ public class MessageService {
 
         existingMessage.setFileIds(updatedFileIds);
         existingMessage.setFileNames(updatedFileNames);
-        existingMessage.setEdited(true);
 
         return messageRepository.save(existingMessage);
     }
+
+    private boolean areFilesUnchanged(Message existingMessage, List<String> existingFiles, List<MultipartFile> newFiles) {
+        if ((existingFiles == null || existingFiles.isEmpty()) && (newFiles == null || newFiles.isEmpty())) {
+            return existingMessage.getFileIds() == null || existingMessage.getFileIds().isEmpty();
+        }
+
+        if (existingFiles != null && existingMessage.getFileIds() != null) {
+            if (existingFiles.size() != existingMessage.getFileIds().size()) {
+                return false;
+            }
+            for (String fileId : existingFiles) {
+                if (!existingMessage.getFileIds().contains(fileId)) {
+                    return false;
+                }
+            }
+        }
+
+        return (newFiles == null || newFiles.isEmpty());
+    }
+
     public void deleteMessage(String messageId) {
         messageRepository.deleteById(messageId);
     }
@@ -200,7 +228,8 @@ public class MessageService {
     }
 
     public void markMessagesAsRead(String roomId, String recipientId) {
-        List<Message> messages = messageRepository.findByRoomIdAndMessageStatusIn(roomId, List.of(MessageStatus.SENT, MessageStatus.DELIVERED));
+        List<Message> messages = messageRepository.findByRoomIdAndMessageStatusIn(roomId, List.of(MessageStatus.SENT,
+                                                                                MessageStatus.DELIVERED));
         for (Message message : messages) {
             if (!message.getSender().equals(recipientId)) {
                 updateMessageStatus(message.getId(), MessageStatus.READ, recipientId);

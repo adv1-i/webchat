@@ -24,8 +24,9 @@ public class Message {
     private List<String> recipients;
     private MessageType messageType;
     private MessageStatus messageStatus = MessageStatus.SENT;
-    private List<String> fileIds;
-    private List<String> fileNames;
+    private List<String> fileIds = new ArrayList<>();
+    private List<String> fileNames = new ArrayList<>();
+
     private List<EditHistory> editHistory = new ArrayList<>();
     @JsonProperty("isEdited")
     private boolean isEdited = false;
@@ -105,19 +106,19 @@ public class Message {
     }
 
     public List<String> getFileIds() {
-        return fileIds;
+        return fileIds != null ? fileIds : new ArrayList<>();
     }
 
     public void setFileIds(List<String> fileIds) {
-        this.fileIds = fileIds;
+        this.fileIds = fileIds != null ? fileIds : new ArrayList<>();
     }
 
     public List<String> getFileNames() {
-        return fileNames;
+        return fileNames != null ? fileNames : new ArrayList<>();
     }
 
     public void setFileNames(List<String> fileNames) {
-        this.fileNames = fileNames;
+        this.fileNames = fileNames != null ? fileNames : new ArrayList<>();
     }
 
     public MessageType getMessageType() {
