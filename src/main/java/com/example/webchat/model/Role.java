@@ -2,7 +2,15 @@ package com.example.webchat.model;
 
 import com.example.webchat.enums.RoleName;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "roles")
 public class Role {
@@ -13,20 +21,4 @@ public class Role {
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private RoleName name;
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public RoleName getName() {
-        return name;
-    }
-
-    public void setName(RoleName name) {
-        this.name = name;
-    }
 }
