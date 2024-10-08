@@ -10,24 +10,12 @@ function selectMessage(messageElement, messageId) {
 
     if (selectedMessageElement === messageElement) {
         selectedMessageElement = null;
-        removeForwardButton();
+        removeActionButtons();
     } else {
         messageElement.style.backgroundColor = '#e0e0e0';
         selectedMessageElement = messageElement;
-        showForwardButton(messageId);
+        showActionButtons(messageId);
     }
-}
-
-function showForwardButton(messageId) {
-    removeForwardButton();
-
-    forwardButton = document.createElement('button');
-    forwardButton.innerHTML = '<img src="/svg/forward.svg" alt="Forward">';
-    forwardButton.onclick = openForwardPopup;
-    forwardButton.className = 'forward-button';
-    document.querySelector('.chat-header').appendChild(forwardButton);
-
-    selectedMessageId = messageId;
 }
 
 function removeForwardButton() {
