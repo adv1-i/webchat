@@ -192,7 +192,7 @@ public class MessageService {
         forwardedMessage.setMessageType(originalMessage.getMessageType());
         forwardedMessage.setFileIds(originalMessage.getFileIds());
         forwardedMessage.setFileNames(originalMessage.getFileNames());
-        forwardedMessage.setIsForwarded(true);
+        forwardedMessage.setForwarded(true);
         forwardedMessage.setOriginalSender(originalMessage.getSender());
         forwardedMessage.setOriginalRoomId(originalMessage.getRoomId());
 
