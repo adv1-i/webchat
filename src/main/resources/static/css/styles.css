@@ -289,7 +289,7 @@ body {
 
 .message-status {
     width: 16px;
-    height: 16px;
+    height: 8px;
 }
 
 
@@ -969,4 +969,21 @@ body {
 .message-text {
     white-space: pre-wrap;
     word-wrap: break-word;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.action-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.action-button img {
+    width: 20px;
+    height: 20px;
 }
