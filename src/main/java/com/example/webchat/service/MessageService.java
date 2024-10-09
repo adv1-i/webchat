@@ -25,20 +25,17 @@ import java.util.List;
 @Service
 public class MessageService {
 
-    private static final long MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
-    private static final int MAX_FILES = 10;
-
     @Autowired
     private MessageRepository messageRepository;
-
-    @Autowired
-    private GridFsTemplate gridFsTemplate;
 
     @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private FileService fileService;
 
     public Message sendMessage(Message message) {
         LocalDateTime now = LocalDateTime.now();
@@ -48,18 +45,8 @@ public class MessageService {
     }
 
     public Message sendMessageWithFiles(String content, String sender, String roomId, String recipients, List<MultipartFile> files)
-            throws MaxFileSizeExceededException, MaxFilesExceededException {
-        if (files != null) {
-            if (files.size() > MAX_FILES) {
-                throw new MaxFilesExceededException("Maximum number of files (10) exceeded");
-            }
-
-            for (MultipartFile file : files) {
-                if (file.getSize() > MAX_FILE_SIZE) {
-                    throw new MaxFileSizeExceededException("File size exceeds the limit of 15 MB");
-                }
-            }
-        }
+            throws MaxFileSizeExceededException, MaxFilesExceededException, IOException {
+        fileService.validateFiles(files);
 
         Message message = new Message();
         message.setContent(content != null ? content : "");
@@ -76,17 +63,8 @@ public class MessageService {
         message.setTimestamp(timestamp);
 
         if (files != null && !files.isEmpty()) {
-            List<String> fileIds = new ArrayList<>();
-            List<String> fileNames = new ArrayList<>();
-            for (MultipartFile file : files) {
-                try {
-                    String fileId = gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(), file.getContentType()).toString();
-                    fileIds.add(fileId);
-                    fileNames.add(file.getOriginalFilename());
-                } catch (IOException e) {
-                    throw new RuntimeException("Error storing file", e);
-                }
-            }
+            List<String> fileIds = fileService.storeFiles(files);
+            List<String> fileNames = fileService.getFileNames(files);
             message.setFileIds(fileIds);
             message.setFileNames(fileNames);
             message.setMessageType(MessageType.FILE);
@@ -101,7 +79,7 @@ public class MessageService {
 
     public Message editMessage(String messageId, String updatedContent, MessageType messageType,
                                List<String> existingFiles, List<MultipartFile> newFiles,
-                               String username) throws IOException {
+                               String username) throws IOException, MaxFileSizeExceededException, MaxFilesExceededException {
 
         Message existingMessage = messageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Message not found"));
@@ -118,7 +96,7 @@ public class MessageService {
         }
 
         existingMessage.addEditHistory(existingMessage.getContent(), new Date(), existingMessage.getFileIds(),
-                                        existingMessage.getFileNames());
+                existingMessage.getFileNames());
 
         existingMessage.setContent(updatedContent);
         existingMessage.setMessageType(messageType);
@@ -137,12 +115,11 @@ public class MessageService {
         }
 
         if (newFiles != null && !newFiles.isEmpty()) {
-            for (MultipartFile file : newFiles) {
-                String fileId = gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(),
-                                                    file.getContentType()).toString();
-                updatedFileIds.add(fileId);
-                updatedFileNames.add(file.getOriginalFilename());
-            }
+            fileService.validateFiles(newFiles);
+            List<String> newFileIds = fileService.storeFiles(newFiles);
+            List<String> newFileNames = fileService.getFileNames(newFiles);
+            updatedFileIds.addAll(newFileIds);
+            updatedFileNames.addAll(newFileNames);
         }
 
         existingMessage.setFileIds(updatedFileIds);
@@ -232,7 +209,7 @@ public class MessageService {
 
     public void markMessagesAsRead(String roomId, String recipientId) {
         List<Message> messages = messageRepository.findByRoomIdAndMessageStatusIn(roomId, List.of(MessageStatus.SENT,
-                                                                                MessageStatus.DELIVERED));
+                MessageStatus.DELIVERED));
         for (Message message : messages) {
             if (!message.getSender().equals(recipientId)) {
                 updateMessageStatus(message.getId(), MessageStatus.READ, recipientId);
