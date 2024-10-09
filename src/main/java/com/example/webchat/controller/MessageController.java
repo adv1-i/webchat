@@ -81,9 +81,18 @@ public class MessageController {
                                                              @RequestParam(required = false) String userTimeZone) {
         ZoneId zoneId = userTimeZone != null ? ZoneId.of(userTimeZone) : ZoneId.systemDefault();
         List<Message> messages = messageService.getMessagesByRoomId(roomId);
+
+        if (messages == null) {
+            messages = new ArrayList<>();
+        }
+
         messages.forEach(message -> {
-            String formattedTime = messageService.formatMessageTime(message.getTimestamp(), zoneId);
-            message.setFormattedTime(formattedTime);
+            if (message.getTimestamp() != null) {
+                String formattedTime = messageService.formatMessageTime(message.getTimestamp(), zoneId);
+                message.setFormattedTime(formattedTime);
+            } else {
+                message.setFormattedTime("");
+            }
         });
         return ResponseEntity.ok(messages);
     }

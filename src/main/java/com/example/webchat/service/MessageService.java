@@ -175,6 +175,9 @@ public class MessageService {
     }
 
     public String formatMessageTime(Date messageTimestamp, ZoneId userTimeZone) {
+        if (messageTimestamp == null) {
+            return "";
+        }
         return messageTimestamp.toInstant()
                 .atZone(userTimeZone)
                 .format(DateTimeFormatter.ofPattern("HH:mm"));
