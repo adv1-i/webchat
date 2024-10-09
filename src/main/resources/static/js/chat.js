@@ -348,12 +348,15 @@ function showMessageOutput(messageOutput) {
 
         messageContentDiv.appendChild(textDiv);
 
-        if (messageOutput.fileIds && messageOutput.fileNames && messageOutput.fileIds.length > 0) {
+        if (messageOutput.fileIds && messageOutput.fileIds.length > 0) {
             var imagesDiv = document.createElement('div');
             imagesDiv.className = 'message-images';
 
             messageOutput.fileIds.forEach((fileId, index) => {
-                const fileName = messageOutput.fileNames[index].toLowerCase();
+                const fileName = messageOutput.fileNames && messageOutput.fileNames[index]
+                    ? messageOutput.fileNames[index].toLowerCase()
+                    : `file_${index}`;
+
                 if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.gif')) {
                     var img = document.createElement('img');
                     img.src = `/api/files/${fileId}`;
@@ -367,16 +370,19 @@ function showMessageOutput(messageOutput) {
             }
 
             messageOutput.fileIds.forEach((fileId, index) => {
-                const fileName = messageOutput.fileNames[index].toLowerCase();
+                const fileName = messageOutput.fileNames && messageOutput.fileNames[index]
+                    ? messageOutput.fileNames[index].toLowerCase()
+                    : `file_${index}`;
+
                 if (!fileName.endsWith('.jpg') && !fileName.endsWith('.jpeg') && !fileName.endsWith('.png') && !fileName.endsWith('.gif')) {
                     var fileDiv = document.createElement('a');
                     fileDiv.className = 'message-file';
                     fileDiv.href = `/api/files/${fileId}`;
                     fileDiv.download = fileName;
                     fileDiv.innerHTML = `
-                        <img src="/svg/doc.svg" alt="File">
-                        <span>${fileName}</span>
-                    `;
+                    <img src="/svg/doc.svg" alt="File">
+                    <span>${fileName}</span>
+                `;
                     messageContentDiv.appendChild(fileDiv);
                 }
             });
