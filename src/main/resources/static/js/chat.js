@@ -29,6 +29,13 @@ function connect() {
         subscribeToUserStatus();
         subscribeToMessageStatus();
         sendUserStatus('ONLINE');
+
+        if (currentRoomId) {
+            joinRoom(currentRoomId);
+        }
+    }, function (error) {
+        console.log('Connection error: ' + error);
+        setTimeout(connect, 5000);
     });
 
     document.addEventListener('click', (event) => {
@@ -41,6 +48,7 @@ function connect() {
         }
     });
 }
+
 
 function sendUserStatus(status) {
     if (stompClient && currentUsername) {
@@ -129,7 +137,7 @@ function getAvailableUsers(roomId) {
 
 
 function joinRoom(roomId) {
-    if (currentRoomId) {
+    if (currentRoomId && stompClient.subscriptions[currentRoomId]) {
         stompClient.unsubscribe(currentRoomId);
     }
     currentRoomId = roomId;
@@ -421,4 +429,7 @@ window.onload = function () {
 
 window.onbeforeunload = function() {
     sendUserStatus('OFFLINE');
+    if (stompClient) {
+        stompClient.disconnect();
+    }
 };
