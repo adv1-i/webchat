@@ -4,8 +4,10 @@ import com.example.webchat.enums.MessageStatus;
 import com.example.webchat.enums.MessageType;
 import com.example.webchat.exception.MaxFileSizeExceededException;
 import com.example.webchat.exception.MaxFilesExceededException;
+import com.example.webchat.exception.MessageNotFoundException;
 import com.example.webchat.service.MessageService;
 import com.example.webchat.model.Message;
+import com.example.webchat.service.MessageStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,9 @@ import java.util.List;
 public class MessageController {
     @Autowired
     private MessageService messageService;
+
+    @Autowired
+    MessageStatusService messageStatusService;
 
     @PostMapping
     public ResponseEntity<Message> sendMessage(@RequestBody Message message) {
@@ -114,24 +119,24 @@ public class MessageController {
     public ResponseEntity<Message> updateMessageStatus(
             @PathVariable String messageId,
             @RequestParam MessageStatus status,
-            Principal principal) {
-        Message updatedMessage = messageService.updateMessageStatus(messageId, status, principal.getName());
+            Principal principal) throws MessageNotFoundException {
+        Message updatedMessage = messageStatusService.updateMessageStatus(messageId, status, principal.getName());
         return ResponseEntity.ok(updatedMessage);
     }
 
     @PostMapping("/room/{roomId}/delivered")
     public ResponseEntity<?> markMessagesAsDelivered(
             @PathVariable String roomId,
-            Principal principal) {
-        messageService.markMessagesAsDelivered(roomId, principal.getName());
+            Principal principal) throws MessageNotFoundException {
+        messageStatusService.markMessagesAsDelivered(roomId, principal.getName());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/room/{roomId}/read")
     public ResponseEntity<?> markMessagesAsRead(
             @PathVariable String roomId,
-            Principal principal) {
-        messageService.markMessagesAsRead(roomId, principal.getName());
+            Principal principal) throws MessageNotFoundException {
+        messageStatusService.markMessagesAsRead(roomId, principal.getName());
         return ResponseEntity.ok().build();
     }
 }
