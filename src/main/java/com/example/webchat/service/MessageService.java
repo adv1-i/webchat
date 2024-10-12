@@ -9,6 +9,8 @@ import com.example.webchat.model.Message;
 import com.example.webchat.utils.MessageStatusUpdate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,7 @@ public class MessageService {
     @Autowired
     private FileService fileService;
 
+    @CacheEvict(value = "messages", key = "#message.roomId")
     public Message sendMessage(Message message) {
         LocalDateTime now = LocalDateTime.now();
         Date timestamp = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
@@ -44,6 +47,7 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
+    @CacheEvict(value = "messages", key = "#roomId")
     public Message sendMessageWithFiles(String content, String sender, String roomId, String recipients, List<MultipartFile> files)
             throws MaxFileSizeExceededException, MaxFilesExceededException, IOException {
         fileService.validateFiles(files);
@@ -73,10 +77,12 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
+    @Cacheable(value = "messages", key = "#roomId")
     public List<Message> getMessagesByRoomId(String roomId) {
         return messageRepository.findByRoomId(roomId);
     }
 
+    @CacheEvict(value = "messages", key = "#messageId")
     public Message editMessage(String messageId, String updatedContent, MessageType messageType,
                                List<String> existingFiles, List<MultipartFile> newFiles,
                                String username) throws IOException, MaxFileSizeExceededException, MaxFilesExceededException {
@@ -147,6 +153,7 @@ public class MessageService {
         return (newFiles == null || newFiles.isEmpty());
     }
 
+    @CacheEvict(value = "messages", key = "#messageId")
     public void deleteMessage(String messageId) {
         messageRepository.deleteById(messageId);
     }
@@ -177,44 +184,6 @@ public class MessageService {
         forwardedMessage.setOriginalRoomId(originalMessage.getRoomId());
 
         return messageRepository.save(forwardedMessage);
-    }
-
-    public Message updateMessageStatus(String messageId, MessageStatus status, String updatedBy) {
-        Message message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new RuntimeException("Message not found"));
-
-        if (!message.getSender().equals(updatedBy)) {
-            message.setMessageStatus(status);
-            Message updatedMessage = messageRepository.save(message);
-
-            messagingTemplate.convertAndSendToUser(
-                    message.getSender(),
-                    "/queue/message-status",
-                    new MessageStatusUpdate(messageId, status)
-            );
-
-            return updatedMessage;
-        }
-        return message;
-    }
-
-    public void markMessagesAsDelivered(String roomId, String recipientId) {
-        List<Message> messages = messageRepository.findByRoomIdAndMessageStatus(roomId, MessageStatus.SENT);
-        for (Message message : messages) {
-            if (!message.getSender().equals(recipientId)) {
-                updateMessageStatus(message.getId(), MessageStatus.DELIVERED, recipientId);
-            }
-        }
-    }
-
-    public void markMessagesAsRead(String roomId, String recipientId) {
-        List<Message> messages = messageRepository.findByRoomIdAndMessageStatusIn(roomId, List.of(MessageStatus.SENT,
-                MessageStatus.DELIVERED));
-        for (Message message : messages) {
-            if (!message.getSender().equals(recipientId)) {
-                updateMessageStatus(message.getId(), MessageStatus.READ, recipientId);
-            }
-        }
     }
 }
 
