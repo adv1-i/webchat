@@ -27,26 +27,24 @@ import java.util.List;
 @Service
 public class MessageService {
 
-    @Autowired
-    private MessageRepository messageRepository;
+    private final MessageRepository messageRepository;
+    private final ObjectMapper objectMapper;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final FileService fileService;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
-
-    @Autowired
-    private FileService fileService;
-
+    public MessageService(MessageRepository messageRepository, ObjectMapper objectMapper,
+                          SimpMessagingTemplate messagingTemplate, FileService fileService) {
+        this.messageRepository = messageRepository;
+        this.objectMapper = objectMapper;
+        this.messagingTemplate = messagingTemplate;
+        this.fileService = fileService;
+    }
     @CacheEvict(value = "messages", key = "#message.roomId")
     public Message sendMessage(Message message) {
-        LocalDateTime now = LocalDateTime.now();
-        Date timestamp = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
-        message.setTimestamp(timestamp);
+        message.setTimestamp(Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()));
         return messageRepository.save(message);
     }
-
     @CacheEvict(value = "messages", key = "#roomId")
     public Message sendMessageWithFiles(String content, String sender, String roomId, String recipients, List<MultipartFile> files)
             throws MaxFileSizeExceededException, MaxFilesExceededException, IOException {
