@@ -11,6 +11,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -76,8 +80,9 @@ public class MessageService {
     }
 
     @Cacheable(value = "messages", key = "#roomId")
-    public List<Message> getMessagesByRoomId(String roomId) {
-        return messageRepository.findByRoomId(roomId);
+    public Page<Message> getMessagesByRoomId(String roomId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return messageRepository.findByRoomIdOrderByTimestampDesc(roomId, pageable);
     }
 
     @CacheEvict(value = "messages", key = "#messageId")

@@ -2,6 +2,10 @@ var stompClient = null;
 var currentRoomId = null;
 var currentUsername = '';
 var currentRecipients = [];
+var currentPage = 0;
+var pageSize = 20;
+var isLoading = false;
+var hasMoreMessages = true;
 
 
 function getCurrentUser() {
@@ -22,6 +26,7 @@ function getCurrentUser() {
 function connect() {
     var socket = new SockJS('/ws');
     stompClient = Stomp.over(socket);
+    stompClient.binary = true;
     stompClient.connect({}, function (frame) {
         console.log('Connected: ' + frame);
         loadRooms();
@@ -85,16 +90,32 @@ function loadRooms() {
 }
 
 function loadMessages(roomId) {
+    if (isLoading || !hasMoreMessages) return;
+    isLoading = true;
     const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    fetch(`/api/messages/room/${roomId}?userTimeZone=${encodeURIComponent(userTimeZone)}`)
+    fetch(`/api/messages/room/${roomId}?page=${currentPage}&size=${pageSize}&userTimeZone=${encodeURIComponent(userTimeZone)}`)
         .then(response => response.json())
-        .then(messages => {
+        .then(data => {
             const messagesDiv = document.getElementById('messages');
-            messagesDiv.innerHTML = '';
-            messages.forEach(message => {
-                showMessageOutput(message);
+            const oldScrollHeight = messagesDiv.scrollHeight;
+            // Удалите data.content.reverse()
+            data.content.forEach(message => {
+                showMessageOutput(message, false);
             });
+            if (currentPage === 0) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight; // Прокрутка вниз после первой загрузки
+            } else {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight - oldScrollHeight;
+            }
+            currentPage++;
+            hasMoreMessages = !data.last;
+            isLoading = false;
+        })
+        .catch(error => {
+            console.error('Error loading messages:', error);
+            isLoading = false;
         });
+
 }
 
 function updateAvailableUsersList(addedUsers) {
@@ -142,19 +163,16 @@ function joinRoom(roomId) {
     }
     currentRoomId = roomId;
     stompClient.subscribe(`/topic/${roomId}`, function (messageOutput) {
-        showMessageOutput(JSON.parse(messageOutput.body));
+        showMessageOutput(JSON.parse(messageOutput.body), true);
     });
     document.getElementById('messages').innerHTML = '';
-    fetch(`/api/rooms/${roomId}`)
-        .then(response => response.json())
-        .then(room => {
-            currentRecipients = room.userIds.filter(userId => userId !== currentUsername);
-            loadMessages(roomId);
-            loadRoomUsers(roomId);
-            updateUrl(roomId);
-            updateRoomDetails(roomId);
-            getAvailableUsers(roomId);
-        });
+    currentPage = 0;
+    hasMoreMessages = true;
+    loadMessages(roomId);
+    loadRoomUsers(roomId);
+    updateUrl(roomId);
+    updateRoomDetails(roomId);
+    getAvailableUsers(roomId);
 
     if (selectedMessageElement) {
         selectedMessageElement.style.backgroundColor = '';
@@ -304,7 +322,7 @@ function clearMessageInput() {
 }
 
 
-function showMessageOutput(messageOutput) {
+function showMessageOutput(messageOutput, isNewMessage) {
     if (!messageOutput || !messageOutput.sender) {
         console.error('Invalid message format:', messageOutput);
         return;
@@ -415,7 +433,12 @@ function showMessageOutput(messageOutput) {
         messageDiv.appendChild(messageContentDiv);
         messageDiv.oncontextmenu = (event) => showContextMenu(event, messageOutput.id);
 
-        document.getElementById('messages').appendChild(messageDiv);
+        if (isNewMessage) {
+            document.getElementById('messages').appendChild(messageDiv);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        } else {
+            document.getElementById('messages').insertBefore(messageDiv, document.getElementById('messages').firstChild);
+        }
     }
 
     if (messageOutput.sender !== currentUsername && document.hasFocus()) {
@@ -423,8 +446,24 @@ function showMessageOutput(messageOutput) {
     }
 }
 
+document.getElementById('messages').addEventListener('scroll', function() {
+    if (this.scrollTop === 0) {
+        loadMessages(currentRoomId);
+    }
+});
+
 window.onload = function () {
     connect();
+    // Add ResizeObserver to adjust scroll position when new messages are added
+    const messagesDiv = document.getElementById('messages');
+    const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            if (entry.target === messagesDiv && entry.contentRect.height > messagesDiv.scrollHeight - messagesDiv.scrollTop) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        }
+    });
+    resizeObserver.observe(messagesDiv);
 };
 
 window.onbeforeunload = function() {

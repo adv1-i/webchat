@@ -9,6 +9,7 @@ import com.example.webchat.service.MessageService;
 import com.example.webchat.model.Message;
 import com.example.webchat.service.MessageStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -82,16 +83,16 @@ public class MessageController {
     }
 
     @GetMapping("/room/{roomId}")
-    public ResponseEntity<List<Message>> getMessagesByRoomId(@PathVariable String roomId,
-                                                             @RequestParam(required = false) String userTimeZone) {
+    public ResponseEntity<Page<Message>> getMessagesByRoomId(
+            @PathVariable String roomId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String userTimeZone
+    ) {
         ZoneId zoneId = userTimeZone != null ? ZoneId.of(userTimeZone) : ZoneId.systemDefault();
-        List<Message> messages = messageService.getMessagesByRoomId(roomId);
+        Page<Message> messages = messageService.getMessagesByRoomId(roomId, page, size);
 
-        if (messages == null) {
-            messages = new ArrayList<>();
-        }
-
-        messages.forEach(message -> {
+        messages.getContent().forEach(message -> {
             if (message.getTimestamp() != null) {
                 String formattedTime = messageService.formatMessageTime(message.getTimestamp(), zoneId);
                 message.setFormattedTime(formattedTime);
@@ -99,8 +100,11 @@ public class MessageController {
                 message.setFormattedTime("");
             }
         });
+
         return ResponseEntity.ok(messages);
     }
+
+
 
     @PostMapping("/forward")
     public ResponseEntity<?> forwardMessage(
